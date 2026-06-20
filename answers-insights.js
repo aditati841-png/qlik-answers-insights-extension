@@ -142,6 +142,115 @@ define(
       );
     }
 
+    /* ═══════════════════════════════════════════════════════════════════
+     *  DEVELOPER VIEW — in-widget debug console
+     * ═══════════════════════════════════════════════════════════════════ */
+    function devBlock(label, innerHtml, prominent) {
+      var hasCopy = innerHtml.indexOf('data-copy') > -1;
+      return (
+        '<div class="ai-dev__block' + (prominent ? ' is-prominent' : '') + '">' +
+          '<div class="ai-dev__label"><span>' + escapeHtmlRaw(label) + '</span>' +
+            (hasCopy ? '<button class="ai-dev__copy">Copy</button>' : '') +
+          '</div>' + innerHtml +
+        '</div>'
+      );
+    }
+
+    function buildDevView(dbg) {
+      if (!dbg) return '<div class="ai-dev__empty">Run the insight to capture request details.</div>';
+      var html = '';
+
+      /* 1 — the exact prompt (the headline of this view) */
+      html += devBlock('Exact prompt sent to Answers',
+        '<pre class="ai-dev__pre" data-copy>' +
+          escapeHtmlRaw(dbg.prompt || '(not composed yet)') + '</pre>', true);
+
+      /* 2 — timeline */
+      var steps = dbg.steps || [];
+      var timeline = steps.length
+        ? steps.map(function (s) {
+            return '<div class="ai-dev__step"><span class="ai-dev__t">' + s.t +
+                   'ms</span><span>' + escapeHtmlRaw(s.label) + '</span></div>';
+          }).join('')
+        : '<div class="ai-dev__step"><span>—</span></div>';
+      html += devBlock('Timeline', '<div class="ai-dev__timeline">' + timeline + '</div>', false);
+
+      /* 3 — detected context */
+      var kv = '';
+      kv += '<div><b>App id:</b> '          + escapeHtmlRaw(dbg.appId || '—') + '</div>';
+      kv += '<div><b>API root:</b> '        + escapeHtmlRaw(dbg.root || '—') + '</div>';
+      kv += '<div><b>Reasoning mode:</b> '  + escapeHtmlRaw(dbg.reasoningMode || '—') + '</div>';
+      kv += '<div><b>Dimensions:</b> '      + escapeHtmlRaw((dbg.dims || []).join(', ') || '—') + '</div>';
+      kv += '<div><b>Measures:</b> '        + escapeHtmlRaw((dbg.measures || []).join(', ') || '—') + '</div>';
+      kv += '<div><b>Selections:</b> '      + escapeHtmlRaw(dbg.selectionsText || 'none') + '</div>';
+      html += devBlock('Detected context', '<div class="ai-dev__kv">' + kv + '</div>', false);
+
+      /* 4 — API requests */
+      if (dbg.requests && dbg.requests.length) {
+        var reqHtml = dbg.requests.map(function (r) {
+          return '<div class="ai-dev__req">' +
+            '<div class="ai-dev__reqline">' + escapeHtmlRaw(r.method + ' ' + r.url) + '</div>' +
+            '<pre class="ai-dev__pre" data-copy>' +
+              escapeHtmlRaw(JSON.stringify(r.body, null, 2)) + '</pre></div>';
+        }).join('');
+        html += devBlock('API requests', reqHtml, false);
+      }
+
+      /* 5 — raw response */
+      if (dbg.responseRaw !== undefined && dbg.responseRaw !== null) {
+        var respStr = (typeof dbg.responseRaw === 'string')
+          ? dbg.responseRaw : JSON.stringify(dbg.responseRaw, null, 2);
+        html += devBlock('Raw response' + (dbg.responseStatus ? ' — HTTP ' + dbg.responseStatus : ''),
+          '<pre class="ai-dev__pre" data-copy>' + escapeHtmlRaw(respStr) + '</pre>', false);
+      }
+
+      /* 6 — error */
+      if (dbg.error) {
+        html += devBlock('Error',
+          '<pre class="ai-dev__pre ai-dev__err">' + escapeHtmlRaw(dbg.error) + '</pre>', false);
+      }
+
+      return html;
+    }
+
+    function renderDevView($root, props) {
+      var $dev = $root.find('.answers-insights__dev');
+      if (!props || !props.devMode) { $dev.hide(); return; }
+      $dev.find('.answers-insights__dev-body').html(buildDevView($root.data('aiDebug')));
+      $dev.css('display', 'block');
+    }
+
+    /** Build a fresh debug recorder for one generation run. */
+    function makeDebug(prompt, root, appId, props, selectionState) {
+      var dbg = {
+        t0: Date.now(),
+        prompt: prompt,
+        root: root,
+        appId: appId,
+        reasoningMode: props.reasoningMode || 'fast',
+        dims: props._dims || [],
+        measures: props._measures || [],
+        selectionsText: (selectionState && selectionState.length)
+          ? selectionState.map(function (s) {
+              return s.fieldName + ' = ' + (s.selectedValues || []).join(' / ');
+            }).join('  |  ')
+          : 'none',
+        steps: [],
+        requests: [],
+        responseRaw: null,
+        responseStatus: null,
+        error: null
+      };
+      dbg.log = function (label) { this.steps.push({ label: label, t: Date.now() - this.t0 }); };
+      return dbg;
+    }
+
+    /** escapeHtml that also handles undefined/null without throwing. */
+    function escapeHtmlRaw(str) {
+      if (str === undefined || str === null) return '';
+      return escapeHtml(str);
+    }
+
     function escapeHtml(str) {
       return String(str)
         .replace(/&/g, '&amp;').replace(/</g, '&lt;')
@@ -276,7 +385,7 @@ define(
       return override || '/api/v1';
     }
 
-    function createThread(root, token, appId, signal, debug) {
+    function createThread(root, token, appId, signal, debug, dbg) {
       var url  = root + '/cloud-assistants/threads';
       var body = {
         name:    'answers-insights-' + Date.now(),
@@ -284,11 +393,13 @@ define(
         messages: []
       };
       if (debug) console.log('[AnswersInsights] createThread →', url, body);
+      if (dbg) dbg.requests.push({ method: 'POST', url: url, body: body });
       return fetch(url, {
         method: 'POST', credentials: 'include',
         headers: apiHeaders(token), body: JSON.stringify(body), signal: signal
       })
       .then(function (res) {
+        if (dbg) dbg.log('Thread create → HTTP ' + res.status);
         if (!res.ok) return res.text().then(function (t) {
           throw new Error('Thread creation failed (' + res.status + '): ' + t);
         });
@@ -302,19 +413,21 @@ define(
       });
     }
 
-    function invokeThread(root, token, threadId, appId, promptText, reasoningMode, signal, onChunk, onReasoning, debug) {
+    function invokeThread(root, token, threadId, appId, promptText, reasoningMode, signal, onChunk, onReasoning, debug, dbg) {
       var url  = root + '/cloud-assistants/' + threadId + '/actions/invoke';
       var body = {
         context: { type: 'app', id: appId, data: { mode: 'live', route: 'answers', custom: true, reasoning_mode: reasoningMode || 'fast' } },
         content: [{ text: promptText }]
       };
       if (debug) console.log('[AnswersInsights] invoke →', url, body);
+      if (dbg) dbg.requests.push({ method: 'POST', url: url, body: body });
       return fetch(url, {
         method: 'POST', credentials: 'include',
         headers: apiHeaders(token, { 'Accept': 'text/event-stream, application/json' }),
         body: JSON.stringify(body), signal: signal
       })
       .then(function (res) {
+        if (dbg) { dbg.log('Invoke → HTTP ' + res.status); dbg.responseStatus = res.status; }
         if (!res.ok) return res.text().then(function (t) {
           throw new Error('Invoke failed (' + res.status + '): ' + t);
         });
@@ -526,6 +639,12 @@ define(
         $promptToggle.hide();
       }
 
+      /* Developer view — capture this run's request lifecycle */
+      var dbg = makeDebug(prompt, root, appId, props, selectionState);
+      $root.data('aiDebug', dbg);
+      dbg.log('Prompt composed');
+      renderDevView($root, props);
+
       $ctxBar.text(selectionState.length
         ? 'Context: ' + selectionState.map(function (s) {
             return s.fieldName + ' = ' +
@@ -584,9 +703,11 @@ define(
 
       ensureCsrfToken(root, debug)
         .then(function (token) {
-          return createThread(root, token, appId, signal, debug)
+          dbg.log('CSRF token acquired');
+          return createThread(root, token, appId, signal, debug, dbg)
             .then(function (threadId) {
-              return invokeThread(root, token, threadId, appId, prompt, props.reasoningMode || 'fast', signal, onChunk, onReasoning, debug);
+              dbg.log('Thread id: ' + threadId);
+              return invokeThread(root, token, threadId, appId, prompt, props.reasoningMode || 'fast', signal, onChunk, onReasoning, debug, dbg);
             });
         })
         .then(function (result) {
@@ -594,6 +715,10 @@ define(
           var lastData  = (result && result.lastData) ? result.lastData : null;
           showText(renderMarkdown(fullText));
           $root.data('aiState', 'done');
+
+          dbg.log('Response rendered');
+          dbg.responseRaw = lastData || fullText || null;
+          renderDevView($root, props);
 
           /* Reasoning section — only if dev has enabled it */
           var reasoningText = $root.data('aiReasoning') || '';
@@ -624,6 +749,9 @@ define(
           $printBtn.show();
         })
         .catch(function (err) {
+          dbg.error = (err && err.message) ? err.message : String(err);
+          dbg.log('Error');
+          renderDevView($root, props);
           if (err && err.name === 'AbortError') {
             if (!timedOut) return;
             $body.html(
@@ -699,6 +827,7 @@ define(
           /* api */
           answersEndpoint:   '',
           showPromptPreview: false,
+          devMode:           false,
           debugMode:         false,
           reasoningMode:     'fast',
           showReasoning:     false
@@ -766,6 +895,10 @@ define(
                 '<button class="answers-insights__copy" title="Copy to clipboard" style="display:none">' + ICON_COPY + ' Copy</button>' +
                 '<button class="answers-insights__print" title="Export as PDF" style="display:none">' + ICON_PRINT + ' Export</button>' +
               '</div>' +
+              '<div class="answers-insights__dev" style="display:none">' +
+                '<button class="answers-insights__dev-header is-open">' + ICON_CHEVRON + '<span>🛠 Developer view</span></button>' +
+                '<div class="answers-insights__dev-body"></div>' +
+              '</div>' +
             '</div>'
           );
           $element.data('aiState', 'idle');
@@ -796,6 +929,38 @@ define(
             } else {
               $pre.css('display', 'block');
               $btn.addClass('is-open').find('span').text('Hide prompt');
+            }
+          });
+
+          $element.on('click', '.answers-insights__dev-header', function () {
+            var $devBody = $element.find('.answers-insights__dev-body');
+            var $btn = $(this);
+            if ($devBody.is(':visible')) {
+              $devBody.hide();
+              $btn.removeClass('is-open');
+            } else {
+              $devBody.css('display', 'block');
+              $btn.addClass('is-open');
+            }
+          });
+
+          $element.on('click', '.ai-dev__copy', function () {
+            var $btn = $(this);
+            var $pre = $btn.closest('.ai-dev__block').find('[data-copy]').first();
+            var text = $pre.text();
+            if (!text) return;
+            var done = function (ok) {
+              $btn.text(ok ? 'Copied!' : 'Failed');
+              setTimeout(function () { $btn.text('Copy'); }, 1200);
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(false); });
+            } else {
+              var $ta = $('<textarea style="position:fixed;opacity:0"></textarea>').val(text);
+              $('body').append($ta);
+              $ta[0].select();
+              try { document.execCommand('copy'); done(true); } catch (e) { done(false); }
+              $ta.remove();
             }
           });
 
@@ -877,6 +1042,21 @@ define(
           $promptToggle.css('display', 'block');
         } else {
           $promptToggle.hide();
+        }
+
+        /* Developer view — show live preview before/while idle; runs overwrite it */
+        if (enrichedProps.devMode) {
+          var devState = $element.data('aiState');
+          if (devState !== 'loading' && devState !== 'done') {
+            var sel = getSelectionState(app);
+            var preview = makeDebug(buildPrompt(enrichedProps, sel),
+                                    apiRoot(enrichedProps), app && app.id, enrichedProps, sel);
+            preview.selectionsText += (sel.length ? '' : '  (no active selections)');
+            $element.data('aiDebug', preview);
+          }
+          renderDevView($element, enrichedProps);
+        } else {
+          $element.find('.answers-insights__dev').hide();
         }
 
         /* Auto-run once on first analysis-mode load */

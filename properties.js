@@ -247,8 +247,9 @@ define([], function () {
     items: {
       apiHelp: {
         label: 'No API key needed — uses your active Qlik Cloud session. ' +
-               'Enable "Show exact prompt panel" below to see the precise text sent to Qlik Answers in the widget footer. ' +
-               'Enable Debug mode to also log it to the browser console.',
+               'Turn on "Developer view" for an in-widget console showing the exact prompt, request payloads, timeline, and raw response. ' +
+               '"Show exact prompt panel" is a lighter option that shows only the composed prompt. ' +
+               'Debug mode logs everything to the browser console as well.',
         component: 'text'
       },
       answersEndpoint: {
@@ -260,12 +261,23 @@ define([], function () {
       },
       showPromptPreview: {
         ref: 'props.showPromptPreview',
-        label: 'Show "View exact prompt" panel (developer transparency)',
+        label: 'Show "View exact prompt" panel (lightweight transparency)',
         type: 'boolean',
         component: 'switch',
         options: [
           { value: true,  label: 'Show' },
           { value: false, label: 'Hide' }
+        ],
+        defaultValue: false
+      },
+      devMode: {
+        ref: 'props.devMode',
+        label: 'Developer view (in-widget debug console)',
+        type: 'boolean',
+        component: 'switch',
+        options: [
+          { value: true,  label: 'On' },
+          { value: false, label: 'Off' }
         ],
         defaultValue: false
       },

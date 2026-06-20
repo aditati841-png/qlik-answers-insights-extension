@@ -51,7 +51,8 @@ Answers Insights closes that gap by embedding the narrative **directly in the sh
 | 🔄 **Auto-refresh** | Regenerates on selection change, with manual refresh + abort |
 | 📐 **Multiple dimensions & measures** | Native Qlik pickers feed the model the fields that matter |
 | ✍️ **Prompt control** | Instruction prompt, numbered questions, output style, length |
-| 👁️ **Prompt transparency** | Optional developer panel shows the *exact* text sent to Answers |
+| 🛠️ **Developer view** | In-widget debug console: exact prompt, request payloads, timeline, raw response |
+| 👁️ **Prompt transparency** | Lighter panel that shows just the *exact* composed prompt |
 | 🎨 **Theme-aware UI** | Skeleton loader, streaming cursor, animated follow-up chips |
 | 📋 **Copy & export** | One-click copy, or open a print-ready PDF view |
 | 🔐 **No API key** | Authenticates off the user's session cookie + CSRF token |
@@ -96,10 +97,28 @@ Header title, background, font (family, size, colour, weight), border, corner ra
 | Field | Purpose |
 |-------|---------|
 | API base URL override | Blank by default — auto-detects from `window.location.origin` |
-| Show exact prompt panel | Developer transparency — renders the composed prompt in the footer |
+| Developer view | In-widget debug console (see below) |
+| Show exact prompt panel | Lightweight footer panel showing just the composed prompt |
 | Reasoning mode | Fast (quick answers) or Thinking (complex reasoning) |
 | Show reasoning to user | Surface the model's reasoning (Thinking mode) |
 | Debug mode | Logs every request, response, and the prompt to the browser console |
+
+### Developer view
+
+Toggle **Developer view** on for a collapsible console docked at the bottom of the widget. It
+captures each generation run and shows, in order:
+
+- **Exact prompt sent to Answers** — the fully composed prompt, highlighted, with a one-click copy.
+- **Timeline** — each step (prompt composed → CSRF acquired → thread created → invoke → rendered)
+  with elapsed milliseconds, so you can see where time goes.
+- **Detected context** — app id, API root, reasoning mode, the dimensions/measures passed, and the
+  active selections that fed the prompt.
+- **API requests** — the actual `POST` bodies sent to `/threads` and `/actions/invoke`.
+- **Raw response** — the unparsed Adaptive Card JSON (with HTTP status), so you can see exactly what
+  Answers returned before the extension formatted it.
+
+In edit mode it previews the prompt live as you change properties, even before a run. Auth tokens
+are never displayed.
 
 ---
 

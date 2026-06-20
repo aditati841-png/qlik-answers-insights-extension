@@ -2,7 +2,7 @@
   "name": "Answers Insights",
   "description": "Generate natural-language insight text on the sheet using Qlik Answers. Configure a prompt, define questions, and pick the dimensions and measures that should inform the narrative.",
   "type": "visualization",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "author": "Adithya Pai",
   "icon": "comment",
   "dependencies": {
