@@ -30,7 +30,6 @@
   gap: 6px;
 }
 
-/* Accent bar before the title — marks this as an AI surface */
 .answers-insights__title::before {
   content: '';
   display: inline-block;
@@ -38,6 +37,28 @@
   height: 13px;
   border-radius: 2px;
   background: var(--lui-color-green-60, #009845);
+  flex-shrink: 0;
+}
+
+/* Groups timestamp + refresh button on the right */
+.answers-insights__header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* "Updated just now" freshness indicator */
+.answers-insights__timestamp {
+  font-size: 10px;
+  color: var(--qlik-color-secondary, #bbb);
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.answers-insights__timestamp.is-visible {
+  opacity: 1;
 }
 
 .answers-insights__refresh {
@@ -85,19 +106,12 @@
   scrollbar-color: var(--qlik-border-color, #d0d0d0) transparent;
 }
 
-.answers-insights__body::-webkit-scrollbar {
-  width: 6px;
-}
-
-.answers-insights__body::-webkit-scrollbar-track {
-  background: transparent;
-}
-
+.answers-insights__body::-webkit-scrollbar { width: 6px; }
+.answers-insights__body::-webkit-scrollbar-track { background: transparent; }
 .answers-insights__body::-webkit-scrollbar-thumb {
   background: var(--qlik-border-color, #d0d0d0);
   border-radius: 3px;
 }
-
 .answers-insights__body::-webkit-scrollbar-thumb:hover {
   background: var(--qlik-color-secondary, #b0b0b0);
 }
@@ -110,24 +124,24 @@
   justify-content: center;
   height: 100%;
   text-align: center;
-  color: var(--qlik-color-secondary, #aaa);
-  gap: 8px;
+  gap: 12px;
 }
 
 .answers-insights__placeholder svg {
-  width: 32px;
-  height: 32px;
-  opacity: 0.35;
+  width: 44px;
+  height: 44px;
+  opacity: 0.25;
+  color: var(--lui-color-green-60, #009845);
 }
 
 .answers-insights__placeholder p {
   margin: 0;
   font-size: 12px;
-  line-height: 1.5;
+  line-height: 1.55;
   color: var(--qlik-color-secondary, #999);
 }
 
-/* ─── Fun loading animation ──────────────────────────────────────────────── */
+/* ─── Loading animation ──────────────────────────────────────────────────── */
 .ai-loading {
   display: flex;
   flex-direction: column;
@@ -176,10 +190,9 @@
   max-width: 240px;
   line-height: 1.4;
   min-height: 1.4em;
-  transition: opacity 0.3s ease;
 }
 
-/* Skeleton shimmer — mimics composing text */
+/* Skeleton shimmer */
 .ai-loading__skeleton {
   width: 100%;
   max-width: 280px;
@@ -212,21 +225,79 @@
   100% { background-position: 0 0;    }
 }
 
-/* ─── Error state ────────────────────────────────────────────────────────── */
-.answers-insights__error {
-  border-left: 3px solid #e84646;
-  padding: 8px 10px;
-  background: rgba(232, 70, 70, 0.08);
-  border-radius: 0 4px 4px 0;
-  font-size: 12px;
-  color: #d0392b;
-  line-height: 1.5;
-  animation: fadeIn 0.3s ease-out;
+/* Compact mode: hide heavy elements on small-height widgets */
+.answers-insights.is-compact .ai-loading {
+  gap: 6px;
+  padding: 12px;
 }
 
-.answers-insights__error strong {
+.answers-insights.is-compact .ai-loading__eq,
+.answers-insights.is-compact .ai-loading__skeleton {
+  display: none;
+}
+
+/* ─── Error state ────────────────────────────────────────────────────────── */
+.answers-insights__error {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  border-left: 3px solid #e84646;
+  padding: 9px 11px;
+  background: rgba(232, 70, 70, 0.06);
+  border-radius: 0 4px 4px 0;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.answers-insights__error-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: #e84646;
+}
+
+.answers-insights__error-icon svg {
+  width: 14px;
+  height: 14px;
   display: block;
-  margin-bottom: 2px;
+}
+
+.answers-insights__error-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.answers-insights__error-content strong {
+  display: block;
+  font-size: 12px;
+  color: #c0392b;
+  margin-bottom: 3px;
+}
+
+.answers-insights__error-content span {
+  font-size: 11px;
+  color: #c0392b;
+  opacity: 0.85;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.answers-insights__error-retry {
+  flex-shrink: 0;
+  align-self: center;
+  background: none;
+  border: 1px solid #e84646;
+  border-radius: 3px;
+  padding: 3px 9px;
+  font-size: 11px;
+  color: #e84646;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+
+.answers-insights__error-retry:hover {
+  background: #e84646;
+  color: #fff;
 }
 
 /* ─── Generated text ─────────────────────────────────────────────────────── */
@@ -235,10 +306,6 @@
   color: var(--qlik-color-primary, #1a1a1a);
   animation: fadeIn 0.3s ease-out;
 }
-
-.answers-insights__text--small  { font-size: 12px; }
-.answers-insights__text--medium { font-size: 13px; }
-.answers-insights__text--large  { font-size: 15px; }
 
 .answers-insights__text p { margin: 0 0 0.75em; }
 .answers-insights__text p:last-child { margin-bottom: 0; }
@@ -269,128 +336,93 @@
   50%      { opacity: 0.15; }
 }
 
-/* ─── Context bar ────────────────────────────────────────────────────────── */
-.answers-insights__context-bar {
-  font-size: 10px;
-  color: var(--qlik-color-secondary, #999);
-  padding: 4px 12px 4px;
+/* ─── Footer — unified bottom zone ──────────────────────────────────────── */
+.answers-insights__footer {
+  flex-shrink: 0;
   border-top: 1px solid var(--qlik-border-color, #ebebeb);
-  flex-shrink: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-/* ─── Prompt preview toggle ──────────────────────────────────────────────── */
-.ai-prompt-toggle {
-  padding: 4px 12px 8px;
-  flex-shrink: 0;
-}
-
-.ai-prompt-toggle__btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 11px;
-  color: var(--qlik-color-secondary, #999);
-  padding: 2px 0;
-  font-family: inherit;
+/* ─── Context bar — selection pills ─────────────────────────────────────── */
+.answers-insights__context-bar {
   display: flex;
   align-items: center;
-  gap: 3px;
-  transition: color 0.15s;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 5px 12px;
+  min-height: 26px;
+  font-size: 10px;
 }
 
-.ai-prompt-toggle__btn:hover {
-  color: var(--qlik-color-primary, #333);
-}
-
-.ai-prompt-toggle__btn svg {
-  width: 10px;
-  height: 10px;
-  transition: transform 0.2s ease;
-}
-
-.ai-prompt-toggle__btn.is-open svg {
-  transform: rotate(180deg);
-}
-
-.ai-prompt-toggle__pre {
-  display: none;
-  margin: 6px 0 0;
-  padding: 8px 10px;
-  background: #f8f8f8;
-  border: 1px solid var(--qlik-border-color, #e0e0e0);
-  border-radius: 4px;
-  font-size: 11px;
-  font-family: 'Courier New', Courier, monospace;
-  line-height: 1.55;
-  white-space: pre-wrap;
-  word-break: break-word;
-  color: #444;
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-/* ─── Reasoning section ──────────────────────────────────────────────────── */
-.answers-insights__reasoning {
-  padding: 2px 12px 4px;
+.ai-ctx__label {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--qlik-color-secondary, #c0c0c0);
+  margin-right: 2px;
   flex-shrink: 0;
-  border-top: 1px solid var(--qlik-border-color, #ebebeb);
 }
 
-.answers-insights__reasoning-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 11px;
-  color: var(--qlik-color-secondary, #999);
-  padding: 2px 0;
-  font-family: inherit;
-  transition: color 0.15s;
-  display: flex;
+.ai-ctx__pill {
+  display: inline-flex;
   align-items: center;
   gap: 4px;
+  background: var(--qlik-color-hover-bg, #f2f2f2);
+  border: 1px solid var(--qlik-border-color, #e4e4e4);
+  border-radius: 10px;
+  padding: 1px 8px;
+  max-width: 200px;
+  overflow: hidden;
 }
 
-.answers-insights__reasoning-btn:hover {
+.ai-ctx__field {
+  font-weight: 600;
   color: var(--qlik-color-primary, #333);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 80px;
 }
 
-.answers-insights__reasoning-btn svg {
-  width: 10px;
-  height: 10px;
-  transition: transform 0.2s ease;
+.ai-ctx__val {
+  color: var(--lui-color-green-60, #009845);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100px;
 }
 
-.answers-insights__reasoning-btn.is-open svg {
-  transform: rotate(180deg);
-}
-
-.answers-insights__reasoning-content {
-  display: none;
-  font-size: 11px;
-  color: #777;
-  background: #f8f9fa;
-  border-radius: 4px;
-  padding: 6px 8px;
-  margin: 4px 0 0;
-  line-height: 1.5;
+.ai-ctx__none {
+  color: var(--qlik-color-secondary, #c0c0c0);
   font-style: italic;
-  max-height: 120px;
-  overflow-y: auto;
-  white-space: pre-wrap;
-  word-break: break-word;
 }
 
-/* ─── Follow-up chips ────────────────────────────────────────────────────── */
+/* ─── Follow-up chips — single-row horizontal scroll ────────────────────── */
 .answers-insights__followups {
-  padding: 4px 12px;
-  flex-shrink: 0;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
   gap: 6px;
+  padding: 4px 12px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 12px,
+    #000 calc(100% - 12px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 12px,
+    #000 calc(100% - 12px),
+    transparent 100%
+  );
 }
+
+.answers-insights__followups::-webkit-scrollbar { display: none; }
+.answers-insights__followups:empty { padding: 0; }
 
 .answers-insights__followup-chip {
   background: none;
@@ -401,12 +433,10 @@
   cursor: pointer;
   font-family: inherit;
   color: var(--qlik-color-secondary, #595959);
+  white-space: nowrap;
+  flex-shrink: 0;
   transition: background 0.15s, border-color 0.15s, color 0.15s,
               transform 0.15s, box-shadow 0.15s;
-  white-space: nowrap;
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
   opacity: 0;
   animation: ai-chip-in 0.35s ease-out forwards;
 }
@@ -432,12 +462,10 @@
 
 /* ─── Action bar ─────────────────────────────────────────────────────────── */
 .answers-insights__actions {
-  padding: 2px 12px 4px;
-  flex-shrink: 0;
   display: flex;
   gap: 4px;
   align-items: center;
-  border-top: 1px solid var(--qlik-border-color, #ebebeb);
+  padding: 2px 12px 4px;
 }
 
 .answers-insights__copy,
@@ -456,6 +484,17 @@
   transition: background 0.15s, color 0.15s;
 }
 
+/* Slide-in animation triggered by the is-entering class */
+.answers-insights__copy.is-entering,
+.answers-insights__print.is-entering {
+  animation: ai-action-in 0.25s ease-out;
+}
+
+@keyframes ai-action-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
 .answers-insights__copy:hover,
 .answers-insights__print:hover {
   background: var(--qlik-color-hover-bg, #f0f0f0);
@@ -470,6 +509,97 @@
 .answers-insights__print svg {
   width: 13px;
   height: 13px;
+}
+
+/* ─── Prompt preview toggle ──────────────────────────────────────────────── */
+.ai-prompt-toggle {
+  padding: 4px 12px 6px;
+}
+
+.ai-prompt-toggle__btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--qlik-color-secondary, #999);
+  padding: 2px 0;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  transition: color 0.15s;
+}
+
+.ai-prompt-toggle__btn:hover { color: var(--qlik-color-primary, #333); }
+
+.ai-prompt-toggle__btn svg {
+  width: 10px;
+  height: 10px;
+  transition: transform 0.2s ease;
+}
+
+.ai-prompt-toggle__btn.is-open svg { transform: rotate(180deg); }
+
+.ai-prompt-toggle__pre {
+  display: none;
+  margin: 6px 0 0;
+  padding: 8px 10px;
+  background: #f8f8f8;
+  border: 1px solid var(--qlik-border-color, #e0e0e0);
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: 'Courier New', Courier, monospace;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #444;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* ─── Reasoning section ──────────────────────────────────────────────────── */
+.answers-insights__reasoning {
+  padding: 2px 12px 6px;
+}
+
+.answers-insights__reasoning-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--qlik-color-secondary, #999);
+  padding: 2px 0;
+  font-family: inherit;
+  transition: color 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.answers-insights__reasoning-btn:hover { color: var(--qlik-color-primary, #333); }
+
+.answers-insights__reasoning-btn svg {
+  width: 10px;
+  height: 10px;
+  transition: transform 0.2s ease;
+}
+
+.answers-insights__reasoning-btn.is-open svg { transform: rotate(180deg); }
+
+.answers-insights__reasoning-content {
+  display: none;
+  font-size: 11px;
+  color: #777;
+  background: #f8f9fa;
+  border-radius: 4px;
+  padding: 6px 8px;
+  margin: 4px 0 0;
+  line-height: 1.5;
+  font-style: italic;
+  max-height: 120px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 /* ─── Developer view ─────────────────────────────────────────────────────── */
@@ -497,13 +627,20 @@
   font-family: inherit;
 }
 
-.answers-insights__dev-header svg {
+/* Chevron (first SVG) rotates; wrench (second SVG) stays fixed */
+.answers-insights__dev-header > svg:first-child {
   width: 10px;
   height: 10px;
   transition: transform 0.2s ease;
 }
 
-.answers-insights__dev-header.is-open svg {
+.answers-insights__dev-header > svg:nth-child(2) {
+  width: 12px;
+  height: 12px;
+  opacity: 0.55;
+}
+
+.answers-insights__dev-header.is-open > svg:first-child {
   transform: rotate(180deg);
 }
 
@@ -630,11 +767,6 @@
 @keyframes spin {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
-}
-
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0; }
 }
 
 @keyframes fadeIn {

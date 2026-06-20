@@ -120,11 +120,27 @@ define(
       '</svg>';
 
     var ICON_PLACEHOLDER =
-      '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.2">' +
-      '<rect x="4" y="6" width="24" height="20" rx="2"/>' +
-      '<line x1="8" y1="12" x2="24" y2="12"/>' +
-      '<line x1="8" y1="16" x2="20" y2="16"/>' +
-      '<line x1="8" y1="20" x2="22" y2="20"/>' +
+      '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.4">' +
+      '<rect x="7" y="5" width="26" height="33" rx="3"/>' +
+      '<line x1="13" y1="15" x2="27" y2="15"/>' +
+      '<line x1="13" y1="21" x2="25" y2="21"/>' +
+      '<line x1="13" y1="27" x2="22" y2="27"/>' +
+      '<path d="M33 8l1.4 3.6 3.6 1.4-3.6 1.4L33 18l-1.4-3.6-3.6-1.4 3.6-1.4z"' +
+      ' stroke-linejoin="round" stroke-width="1.2"/>' +
+      '</svg>';
+
+    var ICON_WRENCH =
+      '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"' +
+      ' stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M13.2 2.8a3 3 0 0 0-4.2 4L2.5 13.3a1.3 1.3 0 1 0 1.8 1.8l6.5-6.5a3 3 0 0 0 2.4-5.8z"/>' +
+      '</svg>';
+
+    var ICON_ERROR =
+      '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"' +
+      ' stroke-linecap="round">' +
+      '<circle cx="8" cy="8" r="6.5"/>' +
+      '<line x1="8" y1="5" x2="8" y2="9"/>' +
+      '<circle cx="8" cy="11.5" r="0.5" fill="currentColor" stroke="none"/>' +
       '</svg>';
 
     function buildLoadingHtml() {
@@ -599,9 +615,10 @@ define(
      * ═══════════════════════════════════════════════════════════════════ */
     function generateInsight($root, props, app, opts) {
       opts = opts || {};
-      var debug = !!props.debugMode;
+      var debug     = !!props.debugMode;
+      var prevState = $root.data('aiState');
 
-      if ($root.data('aiState') === 'loading') {
+      if (prevState === 'loading') {
         if (!opts.force) return;
         var prior = $root.data('aiAbort');
         if (prior) { try { prior.abort(); } catch (e) {} }
@@ -615,7 +632,14 @@ define(
       var $refresh = $root.find('.answers-insights__refresh');
       var $ctxBar  = $root.find('.answers-insights__context-bar');
 
-      $body.html(buildLoadingHtml());
+      $root.find('.answers-insights__timestamp').text('').removeClass('is-visible');
+      if (prevState === 'idle') {
+        $body.html(buildLoadingHtml());
+      } else {
+        $body.stop(true).fadeOut(130, function () {
+          $body.html(buildLoadingHtml()).fadeIn(160);
+        });
+      }
       $refresh.addClass('is-loading').prop('disabled', true);
 
       var selectionState = getSelectionState(app);
@@ -645,14 +669,20 @@ define(
       dbg.log('Prompt composed');
       renderDevView($root, props);
 
-      $ctxBar.text(selectionState.length
-        ? 'Context: ' + selectionState.map(function (s) {
-            return s.fieldName + ' = ' +
-              s.selectedValues.slice(0, 3).join(', ') +
-              (s.selectedValues.length > 3 ? '…' : '');
-          }).join(' | ')
-        : 'No active selections — showing overall summary'
-      );
+      if (selectionState.length) {
+        var pillsHtml = '<span class="ai-ctx__label">Context</span>' +
+          selectionState.map(function (s) {
+            var vals = s.selectedValues.slice(0, 2).join(', ') +
+                       (s.selectedValues.length > 2 ? ' +' + (s.selectedValues.length - 2) : '');
+            return '<span class="ai-ctx__pill">' +
+                   '<span class="ai-ctx__field">' + escapeHtml(s.fieldName) + '</span>' +
+                   '<span class="ai-ctx__val">' + escapeHtml(vals) + '</span>' +
+                   '</span>';
+          }).join('');
+        $ctxBar.html(pillsHtml);
+      } else {
+        $ctxBar.html('<span class="ai-ctx__none">No active selections — showing overall summary</span>');
+      }
 
       /* Rotating messages + elapsed counter */
       var msgIndex = 0;
@@ -684,8 +714,8 @@ define(
       $reasoning.hide();
       $reasoningContent.empty().hide();
       $followups.empty();
-      $copyBtn.hide();
-      $printBtn.hide();
+      $copyBtn.removeClass('is-entering').hide();
+      $printBtn.removeClass('is-entering').hide();
       $root.data('aiReasoning', '');
 
       applyTextStyles($textDiv, props);
@@ -744,9 +774,15 @@ define(
             }
           }
 
-          /* Action buttons */
-          $copyBtn.show();
-          $printBtn.show();
+          /* Action buttons — slide in with animation */
+          [$copyBtn, $printBtn].forEach(function ($btn) {
+            $btn.removeClass('is-entering').show();
+            if ($btn[0]) { void $btn[0].offsetWidth; }
+            $btn.addClass('is-entering');
+          });
+
+          /* Completion timestamp */
+          $root.find('.answers-insights__timestamp').text('Updated just now').addClass('is-visible');
         })
         .catch(function (err) {
           dbg.error = (err && err.message) ? err.message : String(err);
@@ -756,8 +792,12 @@ define(
             if (!timedOut) return;
             $body.html(
               '<div class="answers-insights__error">' +
-              '<strong>Timed out</strong> — Qlik Answers did not respond within ' +
-              (TIMEOUT_MS / 1000) + 's. Click Refresh to try again.' +
+              '<div class="answers-insights__error-icon">' + ICON_ERROR + '</div>' +
+              '<div class="answers-insights__error-content">' +
+              '<strong>Timed out</strong>' +
+              '<span>Qlik Answers did not respond within ' + (TIMEOUT_MS / 1000) + 's.</span>' +
+              '</div>' +
+              '<button class="answers-insights__error-retry">Try again</button>' +
               '</div>'
             );
             $root.data('aiState', 'error');
@@ -766,8 +806,12 @@ define(
           if (debug) console.error('[AnswersInsights]', err);
           $body.html(
             '<div class="answers-insights__error">' +
-            '<strong>Could not generate insight</strong> — ' +
-            escapeHtml(err && err.message ? err.message : String(err)) +
+            '<div class="answers-insights__error-icon">' + ICON_ERROR + '</div>' +
+            '<div class="answers-insights__error-content">' +
+            '<strong>Could not generate insight</strong>' +
+            '<span>' + escapeHtml(err && err.message ? err.message : String(err)) + '</span>' +
+            '</div>' +
+            '<button class="answers-insights__error-retry">Try again</button>' +
             '</div>'
           );
           $root.data('aiState', 'error');
@@ -872,7 +916,13 @@ define(
 
           $element.html(
             '<div class="answers-insights">' +
-              '<div class="answers-insights__header">' + titleHtml + refreshHtml + '</div>' +
+              '<div class="answers-insights__header">' +
+                titleHtml +
+                '<div class="answers-insights__header-right">' +
+                  '<span class="answers-insights__timestamp"></span>' +
+                  refreshHtml +
+                '</div>' +
+              '</div>' +
               '<div class="answers-insights__body">' +
                 '<div class="answers-insights__placeholder">' +
                   ICON_PLACEHOLDER +
@@ -881,22 +931,24 @@ define(
                   '<span style="font-size:11px;color:#999">Dimensions &amp; measures are optional.</span></p>' +
                 '</div>' +
               '</div>' +
-              '<div class="answers-insights__context-bar"></div>' +
-              '<div class="ai-prompt-toggle" style="display:none">' +
-                '<button class="ai-prompt-toggle__btn">' + ICON_CHEVRON + '<span>View exact prompt sent</span></button>' +
-                '<pre class="ai-prompt-toggle__pre"></pre>' +
-              '</div>' +
-              '<div class="answers-insights__reasoning" style="display:none">' +
-                '<button class="answers-insights__reasoning-btn">' + ICON_CHEVRON + '<span>Show reasoning</span></button>' +
-                '<div class="answers-insights__reasoning-content"></div>' +
-              '</div>' +
-              '<div class="answers-insights__followups"></div>' +
-              '<div class="answers-insights__actions">' +
-                '<button class="answers-insights__copy" title="Copy to clipboard" style="display:none">' + ICON_COPY + ' Copy</button>' +
-                '<button class="answers-insights__print" title="Export as PDF" style="display:none">' + ICON_PRINT + ' Export</button>' +
+              '<div class="answers-insights__footer">' +
+                '<div class="answers-insights__context-bar"></div>' +
+                '<div class="answers-insights__followups"></div>' +
+                '<div class="answers-insights__actions">' +
+                  '<button class="answers-insights__copy" title="Copy to clipboard" style="display:none">' + ICON_COPY + ' Copy</button>' +
+                  '<button class="answers-insights__print" title="Export as PDF" style="display:none">' + ICON_PRINT + ' Export</button>' +
+                '</div>' +
+                '<div class="ai-prompt-toggle" style="display:none">' +
+                  '<button class="ai-prompt-toggle__btn">' + ICON_CHEVRON + '<span>View exact prompt sent</span></button>' +
+                  '<pre class="ai-prompt-toggle__pre"></pre>' +
+                '</div>' +
+                '<div class="answers-insights__reasoning" style="display:none">' +
+                  '<button class="answers-insights__reasoning-btn">' + ICON_CHEVRON + '<span>Show reasoning</span></button>' +
+                  '<div class="answers-insights__reasoning-content"></div>' +
+                '</div>' +
               '</div>' +
               '<div class="answers-insights__dev" style="display:none">' +
-                '<button class="answers-insights__dev-header is-open">' + ICON_CHEVRON + '<span>🛠 Developer view</span></button>' +
+                '<button class="answers-insights__dev-header is-open">' + ICON_CHEVRON + ICON_WRENCH + '<span>Developer view</span></button>' +
                 '<div class="answers-insights__dev-body"></div>' +
               '</div>' +
             '</div>'
@@ -1016,6 +1068,11 @@ define(
             win.print();
           });
 
+          $element.on('click', '.answers-insights__error-retry', function () {
+            var p = $element.data('aiProps') || {};
+            generateInsight($element, p, $element.data('aiApp'), { force: true });
+          });
+
         } else {
           /* Subsequent paints — keep chrome in sync with property changes */
           $element.find('.answers-insights__title').text(props.displayTitle || '');
@@ -1033,6 +1090,7 @@ define(
         /* Apply container + text styles on every paint so property changes render live */
         applyWidgetStyles($element.find('.answers-insights'), enrichedProps);
         applyTextStyles($element.find('.answers-insights__text'), enrichedProps);
+        $element.find('.answers-insights').toggleClass('is-compact', $element.height() < 130);
 
         /* Prompt transparency panel — keep visibility + content in sync live */
         var $promptToggle = $element.find('.ai-prompt-toggle');
