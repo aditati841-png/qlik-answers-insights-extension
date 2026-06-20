@@ -164,6 +164,11 @@ The invoke call is **synchronous** — it returns `application/json` (status 201
 finishes, which can take up to ~1 minute, so the UI shows a skeleton loader during the wait. An
 SSE (`text/event-stream`) branch is kept as a fallback in case a future route streams.
 
+Because each invoke is a genuine Qlik Answers request, **every generation draws on your tenant's
+Qlik Answers consumption** — the same metered usage you'd spend asking Answers a question directly.
+That's by design: each run is a real, grounded answer doing real analytical work for the viewer.
+See [Consumption](#consumption) for the full picture.
+
 ### Parsing the response
 
 The answer arrives as an **Adaptive Card**, not plain text. The extension walks the card, collects
@@ -184,6 +189,36 @@ At runtime the final prompt is assembled in this order:
 7. Numbered questions
 
 The whole string is sent as `content[0].text`. Enable **Show exact prompt panel** to see it verbatim.
+
+---
+
+## Consumption
+
+To be completely clear: **this extension consumes Qlik Answers consumption.** Every time it
+generates an insight — on load, on a selection change (when auto-refresh is on), or when a user
+clicks **Refresh** — it sends a real request to Qlik Answers, and that request **draws on your
+tenant's metered Qlik Answers usage**, exactly as if someone had asked Answers the same question
+in its own interface. There's no hidden free path: an insight on the canvas *is* an Answers call,
+and an Answers call *is* consumption.
+
+So yes — leaving it on a busy sheet, or with aggressive auto-refresh, will spend consumption. That
+is worth saying plainly.
+
+Now the reassuring part: this is consumption working *for* you, not against you. Each unit spent
+buys a grounded, selection-aware answer delivered to the person actually looking at the dashboard —
+the same value Qlik Answers gives standalone, just placed where decisions get made. For normal
+viewing patterns the footprint is modest and entirely predictable, and you stay in full control of
+the dials:
+
+- **Auto-refresh is yours to set** — turn it off and insights only generate when a user explicitly
+  clicks **Refresh**, so nothing is spent unless someone asks for it.
+- **Debounced regeneration** — when auto-refresh is on, rapid selection changes collapse into a
+  single request instead of one per click.
+- **One run = one answer** — generation is on-demand and bounded; the widget doesn't poll or
+  silently regenerate in the background.
+
+In short: it consumes, you'd expect it to, and that spend is simply the cost of putting a real
+analyst's answer directly in the sheet — money doing visible work, not quota quietly leaking away.
 
 ---
 
