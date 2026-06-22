@@ -201,26 +201,8 @@ define(
       kv += '<div><b>Selections:</b> '      + escapeHtmlRaw(dbg.selectionsText || 'none') + '</div>';
       html += devBlock('Detected context', '<div class="ai-dev__kv">' + kv + '</div>', false);
 
-      /* 4 — API requests */
-      if (dbg.requests && dbg.requests.length) {
-        var reqHtml = dbg.requests.map(function (r) {
-          return '<div class="ai-dev__req">' +
-            '<div class="ai-dev__reqline">' + escapeHtmlRaw(r.method + ' ' + r.url) + '</div>' +
-            '<pre class="ai-dev__pre" data-copy>' +
-              escapeHtmlRaw(JSON.stringify(r.body, null, 2)) + '</pre></div>';
-        }).join('');
-        html += devBlock('API requests', reqHtml, false);
-      }
 
-      /* 5 — raw response */
-      if (dbg.responseRaw !== undefined && dbg.responseRaw !== null) {
-        var respStr = (typeof dbg.responseRaw === 'string')
-          ? dbg.responseRaw : JSON.stringify(dbg.responseRaw, null, 2);
-        html += devBlock('Raw response' + (dbg.responseStatus ? ' — HTTP ' + dbg.responseStatus : ''),
-          '<pre class="ai-dev__pre" data-copy>' + escapeHtmlRaw(respStr) + '</pre>', false);
-      }
-
-      /* 6 — error */
+      /* error */
       if (dbg.error) {
         html += devBlock('Error',
           '<pre class="ai-dev__pre ai-dev__err">' + escapeHtmlRaw(dbg.error) + '</pre>', false);
