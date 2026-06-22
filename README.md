@@ -2,8 +2,8 @@
 
 Turn any Qlik Sense sheet into a natural-language analyst. **Answers Insights** drops a
 configurable AI narrative panel onto the canvas that reads the app's current selections,
-dimensions, and measures, then writes a plain-language summary — powered by **Qlik Answers**
-(the Qlik Cloud Assistants API), with **no API key or backend to manage**.
+dimensions, and measures, then writes a plain-language summary — powered by **Qlik Answers**,
+with **no API key or backend to manage**.
 
 ![Type](https://img.shields.io/badge/type-visualization-2563eb) ![Qlik Sense](https://img.shields.io/badge/Qlik%20Sense-%E2%89%A53.0.0-009845) ![Auth](https://img.shields.io/badge/auth-session%20cookie-555)
 
@@ -46,22 +46,21 @@ Answers Insights closes that gap by embedding the narrative **directly in the sh
 
 | | |
 |---|---|
-| 🧠 **Qlik Answers powered** | Uses the Cloud Assistants API — grounded in your tenant's data |
+| 🧠 **Qlik Answers powered** | Grounded in your tenant's data |
 | 🔍 **Live selection context** | Active filters are injected into every prompt |
 | 🔄 **Auto-refresh** | Regenerates on selection change, with manual refresh + abort |
 | 📐 **Multiple dimensions & measures** | Native Qlik pickers feed the model the fields that matter |
 | ✍️ **Prompt control** | Instruction prompt, numbered questions, output style, length |
-| 🛠️ **Developer view** | In-widget debug console: exact prompt, request payloads, timeline, raw response |
-| 👁️ **Prompt transparency** | Lighter panel that shows just the *exact* composed prompt |
+| 👁️ **Prompt transparency** | Optional panel that shows the exact composed prompt |
 | 🎨 **Theme-aware UI** | Skeleton loader, streaming cursor, animated follow-up chips |
 | 📋 **Copy & export** | One-click copy, or open a print-ready PDF view |
-| 🔐 **No API key** | Authenticates off the user's session cookie + CSRF token |
+| 🔐 **No API key** | Authenticates off the user's existing Qlik Cloud session |
 
 ---
 
 ## Installation
 
-1. Download `answers-insights.zip` from this repo (or zip the source folder yourself).
+1. Download `answers-insights.zip` from the [latest release](../../releases/latest).
 2. Qlik Cloud → **Management Console → Extensions → Add**, and upload the zip.
 3. Open any app → **Edit sheet** → drag **Answers Insights** onto the canvas.
 4. Configure the prompt and questions in the properties panel, then click **Refresh**.
@@ -93,144 +92,30 @@ Auto-refresh on selection change, auto-run on load, and toggles for the refresh 
 ### Appearance
 Header title, background, font (family, size, colour, weight), border, corner radius, padding, and line height.
 
-### API Settings
+### Other
 | Field | Purpose |
 |-------|---------|
-| API base URL override | Blank by default — auto-detects from `window.location.origin` |
-| Developer view | In-widget debug console (see below) |
-| Show exact prompt panel | Lightweight footer panel showing just the composed prompt |
+| Show exact prompt panel | Footer panel showing the composed prompt verbatim |
 | Reasoning mode | Fast (quick answers) or Thinking (complex reasoning) |
 | Show reasoning to user | Surface the model's reasoning (Thinking mode) |
-| Debug mode | Logs every request, response, and the prompt to the browser console |
-
-### Developer view
-
-Toggle **Developer view** on for a collapsible console docked at the bottom of the widget. It
-captures each generation run and shows, in order:
-
-- **Exact prompt sent to Answers** — the fully composed prompt, highlighted, with a one-click copy.
-- **Timeline** — each step (prompt composed → CSRF acquired → thread created → invoke → rendered)
-  with elapsed milliseconds, so you can see where time goes.
-- **Detected context** — app id, API root, reasoning mode, the dimensions/measures passed, and the
-  active selections that fed the prompt.
-- **API requests** — the actual `POST` bodies sent to `/threads` and `/actions/invoke`.
-- **Raw response** — the unparsed Adaptive Card JSON (with HTTP status), so you can see exactly what
-  Answers returned before the extension formatted it.
-
-In edit mode it previews the prompt live as you change properties, even before a run. Auth tokens
-are never displayed.
-
----
-
-## How authentication works (no API key)
-
-A Qlik Sense extension runs in the browser, served from the same origin as the tenant
-(e.g. `https://your-tenant.us.qlikcloud.com`). That gives it two things for free:
-
-1. **Session cookie** — the browser automatically attaches the user's Qlik Cloud login cookie to
-   every same-origin `fetch`. The existing login *is* the credential — no Bearer token needed.
-2. **CSRF token** — Qlik Cloud requires a CSRF token on same-origin POSTs. The cookie isn't readable
-   from JavaScript, so the extension follows Qlik's documented flow: it calls `GET /api/v1/csrf-token`,
-   reads the token from the `qlik-csrf-token` **response header**, and echoes it back as a request
-   header on every POST (cached per object). See <https://qlik.dev/apis/rest/csrf-token/>.
-
-The result: it works for anyone already logged into the tenant, with zero credential setup.
-
----
-
-## How it works under the hood
-
-### API flow
-
-```
-Step 0 — get the CSRF token (cached after first call)
-  GET /api/v1/csrf-token
-  → response header: qlik-csrf-token: <token>
-
-Step 1 — create a thread (once per refresh)
-  POST /api/v1/cloud-assistants/threads
-  headers: { qlik-csrf-token: <token> }
-  body: { name, context: { type:"app", id:"<appId>", data:{ mode:"live", route:"answers" } }, messages: [] }
-  → { id: "<threadId>" }
-
-Step 2 — invoke with the composed prompt
-  POST /api/v1/cloud-assistants/<threadId>/actions/invoke
-  headers: { qlik-csrf-token: <token>, Accept: "text/event-stream, application/json" }
-  body: { context: {...}, content: [{ text: "<composed prompt>" }] }
-  → JSON (Adaptive Card)
-```
-
-The invoke call is **synchronous** — it returns `application/json` (status 201) after the agent
-finishes, which can take up to ~1 minute, so the UI shows a skeleton loader during the wait. An
-SSE (`text/event-stream`) branch is kept as a fallback in case a future route streams.
-
-Because each invoke is a genuine Qlik Answers request, **every generation draws on your tenant's
-Qlik Answers consumption** — the same metered usage you'd spend asking Answers a question directly.
-That's by design: each run is a real, grounded answer doing real analytical work for the viewer.
-See [Consumption](#consumption) for the full picture.
-
-### Parsing the response
-
-The answer arrives as an **Adaptive Card**, not plain text. The extension walks the card, collects
-**visible** `TextBlock`s (skipping hidden detail sections and action buttons), bolds headings,
-strips `<citation>` tags, and surfaces `Action.Submit` titles as clickable **follow-up chips**.
-The top-level `summary` field is internal agent meta-text and is intentionally ignored.
-
-### How the prompt is composed
-
-At runtime the final prompt is assembled in this order:
-
-1. Instruction prompt
-2. Output-style hint
-3. Word-count guidance
-4. Current selection context (field = value pairs)
-5. Dimensions to analyse
-6. Key measures
-7. Numbered questions
-
-The whole string is sent as `content[0].text`. Enable **Show exact prompt panel** to see it verbatim.
 
 ---
 
 ## Consumption
 
-To be completely clear: **this extension consumes Qlik Answers consumption.** Every time it
-generates an insight — on load, on a selection change (when auto-refresh is on), or when a user
-clicks **Refresh** — it sends a real request to Qlik Answers, and that request **draws on your
-tenant's metered Qlik Answers usage**, exactly as if someone had asked Answers the same question
-in its own interface. There's no hidden free path: an insight on the canvas *is* an Answers call,
-and an Answers call *is* consumption.
+**This extension consumes Qlik Answers consumption.** Every time it generates an insight — on
+load, on a selection change (when auto-refresh is on), or when a user clicks **Refresh** — it
+sends a real request to Qlik Answers, and that request draws on your tenant's metered usage,
+exactly as if someone had asked Answers the same question in its own interface.
 
-So yes — leaving it on a busy sheet, or with aggressive auto-refresh, will spend consumption. That
-is worth saying plainly.
-
-Now the reassuring part: this is consumption working *for* you, not against you. Each unit spent
-buys a grounded, selection-aware answer delivered to the person actually looking at the dashboard —
-the same value Qlik Answers gives standalone, just placed where decisions get made. For normal
-viewing patterns the footprint is modest and entirely predictable, and you stay in full control of
-the dials:
+You stay in control of the dials:
 
 - **Auto-refresh is yours to set** — turn it off and insights only generate when a user explicitly
-  clicks **Refresh**, so nothing is spent unless someone asks for it.
+  clicks **Refresh**.
 - **Debounced regeneration** — when auto-refresh is on, rapid selection changes collapse into a
   single request instead of one per click.
 - **One run = one answer** — generation is on-demand and bounded; the widget doesn't poll or
   silently regenerate in the background.
-
-In short: it consumes, you'd expect it to, and that spend is simply the cost of putting a real
-analyst's answer directly in the sheet — money doing visible work, not quota quietly leaking away.
-
----
-
-## Project structure
-
-| File | Purpose |
-|------|---------|
-| `answers-insights.qext` | Extension metadata (name, version, icon) |
-| `answers-insights.js`   | Main extension — paint loop, auth, API calls, SSE parsing, rendering |
-| `properties.js`         | Properties panel definition |
-| `answers-insights.css`  | Styling — skeleton loader, streaming cursor, chips, states |
-| `answers-insights.zip`  | Packaged build, ready to upload to Qlik Cloud |
 
 ---
 
@@ -238,13 +123,12 @@ analyst's answer directly in the sheet — money doing visible work, not quota q
 
 | Symptom | Likely cause |
 |---------|-------------|
-| `Thread creation failed (403)` | User lacks access to Qlik Answers on this tenant, or the CSRF token is missing. Enable Debug mode and check the console. |
-| `Thread creation failed (404)` | The `/api/v1/cloud-assistants` path isn't available — confirm Answers is enabled on the tenant. |
-| Response text is empty | Enable Debug mode to log the raw JSON. The `content` array may be empty if Answers found no relevant data. |
-| CSRF token is blank | Reload the app (a fresh login sets the cookie). Debug mode logs whether the token was found. |
+| Insight won't generate | You may not be logged in to the correct Qlik Cloud tenant, or your session has expired. Reload the page and try again. |
+| "Could not generate insight" | Qlik Answers may not be enabled on the tenant, or your user role doesn't have access. Contact your tenant administrator. |
+| Response text is empty | Answers may have found no relevant data for the current selection. Adjust the prompt or selection and retry. |
 
 ---
 
 ## License
 
-ISC © Adithya Pai
+MIT © Adithya Pai

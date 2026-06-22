@@ -247,7 +247,7 @@ define([], function () {
     items: {
       apiHelp: {
         label: 'No API key needed — uses your active Qlik Cloud session. ' +
-               'Turn on "Developer view" for an in-widget console showing the exact prompt, request payloads, timeline, and raw response. ' +
+               'Turn on "Developer view" for an in-widget console showing the exact prompt, timeline, and detected context. ' +
                '"Show exact prompt panel" is a lighter option that shows only the composed prompt. ' +
                'Debug mode logs everything to the browser console as well.',
         component: 'text'
