@@ -1,16 +1,24 @@
 {
-  "name": "qlik---answers---in-application",
-  "version": "1.0.0",
-  "description": "Generates natural-language insight text on the sheet using the **Qlik Cloud Assistants API** (`/api/v1/cloud-assistants`). No API key required.",
+  "name": "qlik-answers-insights-extension",
+  "version": "2.2.0",
+  "description": "Qlik Sense extension that generates natural-language insight text on the sheet using the Qlik Cloud Assistants API. No API key required.",
   "main": "answers-insights.js",
   "scripts": {
+    "build-guide": "node gen-guide.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "qlik",
+    "qlik-sense",
+    "qlik-cloud",
+    "qlik-answers",
+    "extension",
+    "visualization"
+  ],
+  "author": "Adithya Pai",
+  "license": "MIT",
   "type": "commonjs",
-  "dependencies": {
+  "devDependencies": {
     "docx": "^9.7.1"
   }
 }
