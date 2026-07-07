@@ -218,10 +218,10 @@ define([], function () {
         component: 'dropdown',
         defaultValue: 'medium',
         options: [
-          { value: 'none',   label: 'None'         },
-          { value: 'small',  label: 'Small  (8px)' },
-          { value: 'medium', label: 'Medium (16px)'},
-          { value: 'large',  label: 'Large  (24px)'}
+          { value: 'none',   label: 'None'   },
+          { value: 'small',  label: 'Small'  },
+          { value: 'medium', label: 'Medium' },
+          { value: 'large',  label: 'Large'  }
         ]
       },
       lineHeight: {

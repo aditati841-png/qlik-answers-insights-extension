@@ -5,7 +5,7 @@ configurable AI narrative panel onto the canvas that reads the app's current sel
 dimensions, and measures, then writes a plain-language summary — powered by **Qlik Answers**,
 with **no API key or backend to manage**.
 
-![Type](https://img.shields.io/badge/type-visualization-2563eb) ![Qlik Sense](https://img.shields.io/badge/Qlik%20Sense-%E2%89%A53.0.0-009845) ![Auth](https://img.shields.io/badge/auth-session%20cookie-555)
+![Type](https://img.shields.io/badge/type-visualization-2563eb) ![Qlik Sense](https://img.shields.io/badge/Qlik%20Sense-%E2%89%A53.0.0-009845) ![Auth](https://img.shields.io/badge/auth-session%20cookie-555) ![Version](https://img.shields.io/badge/version-2.3.0-8b5cf6)
 
 ---
 
@@ -126,6 +126,45 @@ You stay in control of the dials:
 | Insight won't generate | You may not be logged in to the correct Qlik Cloud tenant, or your session has expired. Reload the page and try again. |
 | "Could not generate insight" | Qlik Answers may not be enabled on the tenant, or your user role doesn't have access. Contact your tenant administrator. |
 | Response text is empty | Answers may have found no relevant data for the current selection. Adjust the prompt or selection and retry. |
+| "Timed out" after 3 minutes | Answers didn't respond within 180 seconds — click **Try again**, or check tenant health. |
+
+---
+
+## Project structure
+
+| File | Purpose |
+|------|---------|
+| `answers-insights.qext` | Extension metadata (name, version, icon) |
+| `answers-insights.js`   | Main extension — rendering, generation lifecycle, response parsing |
+| `properties.js`         | Properties panel definition |
+| `answers-insights.css`  | Styling — skeleton loader, streaming cursor, chips, states |
+| `gen-guide.js` + `package.json` | Node script that generates the Word setup guide (`node gen-guide.js`) |
+
+To package the extension, zip `answers-insights.qext`, `answers-insights.js`, `properties.js`,
+and `answers-insights.css` together at the archive root (no folder inside), then upload the zip
+to the Qlik Cloud Management Console. Packaged builds are published on the
+[releases page](../../releases/latest).
+
+---
+
+## Changelog
+
+### 2.3.0
+- **Fixed a stale-run race** — clicking Refresh (or changing a selection) while a generation was
+  already in flight let the superseded run's callbacks re-enable the Refresh button and overwrite
+  the widget mid-run. Every run now carries a token, and superseded runs can no longer touch the UI.
+- **Session resilience** — if the session credential has gone stale, the extension now refreshes it
+  and retries once automatically, so an expired session recovers without a page reload.
+- **Proper teardown** — removing the object from a sheet now cancels in-flight generation, stops the
+  debounce timer, and unbinds the selection-change listener (previously it kept firing against a
+  removed widget).
+- **Header title fix** — adding a title after the widget was first painted with a blank one now works.
+- **Streaming hardening** — duplicate or stale streamed chunks are ignored instead of being
+  rendered twice, and the stream is closed promptly when the response completes.
+- Properties panel: padding option labels no longer claim pixel values the widget doesn't apply.
+
+### 2.2.0
+- Prompt-transparency panel, in-widget developer timeline, UX polish pass.
 
 ---
 

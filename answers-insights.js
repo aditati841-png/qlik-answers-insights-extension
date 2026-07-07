@@ -347,10 +347,10 @@ define(
     /* ═══════════════════════════════════════════════════════════════════
      *  AUTH — session cookie + CSRF token (no API key required)
      * ═══════════════════════════════════════════════════════════════════ */
-    var _csrfToken = null;
+    var _csrfTokens = {};   /* keyed by API root — supports endpoint overrides */
 
     function ensureCsrfToken(root, debug) {
-      if (_csrfToken) return Promise.resolve(_csrfToken);
+      if (_csrfTokens[root]) return Promise.resolve(_csrfTokens[root]);
       var url = root + '/csrf-token';
       if (debug) console.log('[AnswersInsights] GET', url);
       return fetch(url, { method: 'GET', credentials: 'include' })
@@ -363,10 +363,19 @@ define(
               res.status + '). Are you logged in to this tenant?'
             );
           }
-          _csrfToken = token;
+          _csrfTokens[root] = token;
           if (debug) console.log('[AnswersInsights] CSRF token acquired.');
           return token;
         });
+    }
+
+    function invalidateCsrfToken(root) {
+      delete _csrfTokens[root];
+    }
+
+    /** True for HTTP statuses that suggest a stale CSRF token / expired session. */
+    function isAuthError(err) {
+      return !!(err && err.message && /\((401|403)\)/.test(err.message));
     }
 
     function apiHeaders(token, extra) {
@@ -509,10 +518,13 @@ define(
 
       function consume(chunkText) {
         if (!chunkText) return;
+        if (chunkText === fullText) return;                       /* exact duplicate — ignore */
         if (chunkText.length >= fullText.length && chunkText.indexOf(fullText) === 0) {
-          fullText = chunkText;
+          fullText = chunkText;                                    /* cumulative snapshot */
+        } else if (chunkText.length >= 40 && fullText.indexOf(chunkText) === 0) {
+          return;   /* long prefix of what we already have = stale snapshot, not a delta */
         } else {
-          fullText += chunkText;
+          fullText += chunkText;                                   /* true delta */
         }
         if (onChunk) onChunk(fullText);
       }
@@ -532,7 +544,10 @@ define(
             }
             if (line.indexOf('data: ') !== 0) continue;
             var raw = line.slice(6).trim();
-            if (raw === '[DONE]') return { text: fullText, lastData: lastData };
+            if (raw === '[DONE]') {
+              try { reader.cancel(); } catch (e2) {}
+              return { text: fullText, lastData: lastData };
+            }
             try {
               var parsed = JSON.parse(raw);
               lastData = parsed;
@@ -605,6 +620,11 @@ define(
         var prior = $root.data('aiAbort');
         if (prior) { try { prior.abort(); } catch (e) {} }
       }
+
+      /* Run token — an aborted/superseded run must never touch the UI again. */
+      var runId = ($root.data('aiRunId') || 0) + 1;
+      $root.data('aiRunId', runId);
+      function isCurrent() { return $root.data('aiRunId') === runId; }
 
       var controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
       $root.data('aiAbort', controller);
@@ -683,7 +703,9 @@ define(
       function cleanup() {
         clearInterval(timer);
         clearTimeout(timeoutId);
-        $refresh.removeClass('is-loading').prop('disabled', false);
+        /* Only the current run may release the button — a superseded run's
+         * cleanup would otherwise re-enable it while the new run is loading. */
+        if (isCurrent()) $refresh.removeClass('is-loading').prop('disabled', false);
       }
 
       var $textDiv = $('<div class="answers-insights__text"></div>');
@@ -706,23 +728,39 @@ define(
         $textDiv.html(html);
       }
       function onChunk(partial) {
+        if (!isCurrent()) return;
         showText(renderMarkdown(partial) + '<span class="answers-insights__cursor"></span>');
       }
       function onReasoning(text) {
+        if (!isCurrent()) return;
         var prev = $root.data('aiReasoning') || '';
         $root.data('aiReasoning', prev + text);
       }
 
-      ensureCsrfToken(root, debug)
-        .then(function (token) {
+      function runFlow() {
+        return ensureCsrfToken(root, debug).then(function (token) {
           dbg.log('CSRF token acquired');
           return createThread(root, token, appId, signal, debug, dbg)
             .then(function (threadId) {
               dbg.log('Thread id: ' + threadId);
               return invokeThread(root, token, threadId, appId, prompt, props.reasoningMode || 'fast', signal, onChunk, onReasoning, debug, dbg);
             });
+        });
+      }
+
+      runFlow()
+        .catch(function (err) {
+          /* A 401/403 usually means the cached CSRF token went stale — fetch a
+           * fresh one and retry the whole flow once before giving up. */
+          if (isAuthError(err) && isCurrent()) {
+            invalidateCsrfToken(root);
+            dbg.log('Auth error (' + err.message.slice(0, 60) + ') — retrying with fresh CSRF token');
+            return runFlow();
+          }
+          throw err;
         })
         .then(function (result) {
+          if (!isCurrent()) return;
           var fullText  = (result && result.text)     ? result.text     : (result || '');
           var lastData  = (result && result.lastData) ? result.lastData : null;
           showText(renderMarkdown(fullText));
@@ -767,6 +805,7 @@ define(
           $root.find('.answers-insights__timestamp').text('Updated just now').addClass('is-visible');
         })
         .catch(function (err) {
+          if (!isCurrent()) return;   /* superseded run — the new run owns the UI */
           dbg.error = (err && err.message) ? err.message : String(err);
           dbg.log('Error');
           renderDevView($root, props);
@@ -887,9 +926,12 @@ define(
 
         /* First paint — build widget chrome + bind handlers once */
         if (!$element.find('.answers-insights').length) {
-          var titleHtml = props.displayTitle
-            ? '<h4 class="answers-insights__title">' + escapeHtml(props.displayTitle) + '</h4>'
-            : '<span></span>';
+          /* Always render the h4 (hidden when blank) so a title added later
+           * in the properties panel appears without rebuilding the widget. */
+          var titleHtml =
+            '<h4 class="answers-insights__title"' +
+            (props.displayTitle ? '' : ' style="display:none"') + '>' +
+            escapeHtml(props.displayTitle || '') + '</h4>';
           var refreshHtml = props.showRefreshButton !== false
             ? '<button class="answers-insights__refresh" title="Regenerate insight">' +
                 ICON_REFRESH + ' Refresh' +
@@ -1057,8 +1099,9 @@ define(
 
         } else {
           /* Subsequent paints — keep chrome in sync with property changes */
-          $element.find('.answers-insights__title').text(props.displayTitle || '');
-          $element.find('.answers-insights__refresh').toggle(props.showRefreshButton !== false);
+          $element.find('.answers-insights__title')
+            .text(props.displayTitle || '')
+            .toggle(!!props.displayTitle);
         }
 
         /* Sync behaviour-controlled visibility on every paint */
@@ -1115,7 +1158,7 @@ define(
           try {
             var selState = app.selectionState();
             if (selState && selState.OnData) {
-              selState.OnData.bind(function () {
+              var selListener = function () {
                 clearTimeout($element.data('selTimer'));
                 $element.data('selTimer', setTimeout(function () {
                   if (isEditMode()) return;
@@ -1124,9 +1167,27 @@ define(
                   if (!p || p.autoRefresh === false) return;
                   generateInsight($element, p, $element.data('aiApp'), { force: true });
                 }, 800));
-              });
+              };
+              selState.OnData.bind(selListener);
+              /* Keep references so beforeDestroy can unbind */
+              $element.data('aiSelState', selState);
+              $element.data('aiSelListener', selListener);
             }
           } catch (e) {}
+        }
+      },
+
+      /* ── teardown — stop timers, abort in-flight requests, unbind listener ── */
+      beforeDestroy: function ($element) {
+        /* Invalidate any in-flight run so late callbacks can't touch the DOM */
+        $element.data('aiRunId', ($element.data('aiRunId') || 0) + 1);
+        var controller = $element.data('aiAbort');
+        if (controller) { try { controller.abort(); } catch (e) {} }
+        clearTimeout($element.data('selTimer'));
+        var selState = $element.data('aiSelState');
+        var listener = $element.data('aiSelListener');
+        if (selState && selState.OnData && listener) {
+          try { selState.OnData.unbind(listener); } catch (e) {}
         }
       }
     };
