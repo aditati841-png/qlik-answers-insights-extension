@@ -130,12 +130,26 @@ define([], function () {
         type: 'number',
         defaultValue: 13
       },
+      autoThemeColor: {
+        ref: 'props.autoThemeColor',
+        label: 'Match theme text color',
+        type: 'boolean',
+        component: 'switch',
+        options: [
+          { value: true,  label: 'Auto — follow the Qlik theme (light/dark)' },
+          { value: false, label: 'Custom — pick a color below' }
+        ],
+        defaultValue: true
+      },
       fontColor: {
         ref: 'props.fontColor',
         label: 'Font color',
         type: 'object',
         component: 'color-picker',
-        defaultValue: { color: '#1a1a1a', index: -1 }
+        defaultValue: { color: '#1a1a1a', index: -1 },
+        show: function (data) {
+          return data && data.props && data.props.autoThemeColor === false;
+        }
       },
       fontBold: {
         ref: 'props.fontBold',
@@ -329,6 +343,24 @@ define([], function () {
           { value: false, label: 'Off — insight stays fixed until manually refreshed' }
         ],
         defaultValue: true
+      },
+      autoRefreshCooldown: {
+        ref: 'props.autoRefreshCooldown',
+        label: 'Auto-refresh cooldown (seconds)',
+        type: 'number',
+        defaultValue: 5,
+        show: function (data) {
+          return data && data.props && data.props.autoRefresh !== false;
+        }
+      },
+      cooldownHelp: {
+        label: 'Selection changes within the cooldown reuse the pending run instead of ' +
+               'spending a new Qlik Answers request. Set to 0 to refresh on every change. ' +
+               'The manual Refresh button always runs immediately.',
+        component: 'text',
+        show: function (data) {
+          return data && data.props && data.props.autoRefresh !== false;
+        }
       },
       autoRunOnLoad: {
         ref: 'props.autoRunOnLoad',

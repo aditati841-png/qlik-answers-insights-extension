@@ -57,10 +57,15 @@ define(
     function applyTextStyles($el, props) {
       if (!$el || !$el.length) return;
       var ff = props.fontFamily && props.fontFamily !== 'default' ? props.fontFamily : '';
+      /* When "match theme" is on (default) we leave color unset so the
+       * stylesheet's theme-aware var(--qlik-color-primary, …) applies and the
+       * text stays legible on both light and dark Qlik themes. Only a user who
+       * turns the toggle off gets a hard-coded color. */
+      var color = (props.autoThemeColor === false) ? (colorVal(props.fontColor) || '') : '';
       $el.css({
         'font-family':   ff || '',
         'font-size':     props.fontSize  ? props.fontSize + 'px' : '13px',
-        'color':         colorVal(props.fontColor) || '',
+        'color':         color,
         'font-weight':   props.fontBold   ? '700' : '400',
         'font-style':    props.fontItalic ? 'italic' : 'normal',
         'text-align':    props.textAlign  || 'left',
@@ -606,6 +611,59 @@ define(
       } catch (e) { return false; }
     }
 
+    /** Human-friendly relative time, e.g. "just now", "3m ago", "2h ago". */
+    function formatAgo(ts) {
+      if (!ts) return '';
+      var secs = Math.max(0, Math.round((Date.now() - ts) / 1000));
+      if (secs < 45)    return 'just now';
+      if (secs < 90)    return '1m ago';
+      var mins = Math.round(secs / 60);
+      if (mins < 60)    return mins + 'm ago';
+      var hrs = Math.round(mins / 60);
+      if (hrs < 24)     return hrs + 'h ago';
+      var days = Math.round(hrs / 24);
+      return days + 'd ago';
+    }
+
+    /** Refresh the "Updated …" label from the stored completion time. */
+    function refreshTimestamp($root) {
+      var ts = $root.data('aiDoneAt');
+      if (!ts) return;
+      var count = $root.data('aiRunCount') || 0;
+      $root.find('.answers-insights__timestamp')
+        .text('Updated ' + formatAgo(ts))
+        .attr('title', count + (count === 1 ? ' insight' : ' insights') + ' generated this session')
+        .addClass('is-visible');
+    }
+
+    /* ── theme detection ─────────────────────────────────────────────────
+     * The CSS uses Qlik theme vars (var(--qlik-color-primary, …)), which flip
+     * for dark themes on their own. But when a theme leaves those vars unset,
+     * we fall back to sampling the effective background luminance and tag the
+     * widget with .is-dark so the stylesheet can supply light-on-dark colors. */
+    function parseRgb(str) {
+      var m = /rgba?\(([^)]+)\)/.exec(str || '');
+      if (!m) return null;
+      var p = m[1].split(',').map(function (x) { return parseFloat(x); });
+      if (p.length >= 4 && p[3] === 0) return null;   /* fully transparent — keep walking */
+      return { r: p[0], g: p[1], b: p[2] };
+    }
+
+    function detectDarkBackground(el) {
+      try {
+        var node = el;
+        while (node && node !== document.documentElement) {
+          var rgb = parseRgb(window.getComputedStyle(node).backgroundColor);
+          if (rgb) {
+            var lum = 0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b;
+            return lum < 128;
+          }
+          node = node.parentElement;
+        }
+      } catch (e) {}
+      return false;
+    }
+
     /* ═══════════════════════════════════════════════════════════════════
      *  CORE — generate insight
      *  Module-scope (not a method) so it never depends on `this`.
@@ -626,14 +684,21 @@ define(
       $root.data('aiRunId', runId);
       function isCurrent() { return $root.data('aiRunId') === runId; }
 
+      /* Consumption bookkeeping — track when the last run started so the
+       * auto-refresh cooldown can collapse rapid selection changes. */
+      $root.data('aiLastRunStart', Date.now());
+      clearInterval($root.data('aiTsTimer'));   /* stop the "updated Xm ago" ticker */
+
       var controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
       $root.data('aiAbort', controller);
       $root.data('aiState', 'loading');
 
+      var $widget  = $root.find('.answers-insights');
       var $body    = $root.find('.answers-insights__body');
       var $refresh = $root.find('.answers-insights__refresh');
       var $ctxBar  = $root.find('.answers-insights__context-bar');
 
+      $widget.attr('aria-busy', 'true');   /* a11y: announce work in progress */
       $root.find('.answers-insights__timestamp').text('').removeClass('is-visible');
       if (prevState === 'idle') {
         $body.html(buildLoadingHtml());
@@ -705,10 +770,15 @@ define(
         clearTimeout(timeoutId);
         /* Only the current run may release the button — a superseded run's
          * cleanup would otherwise re-enable it while the new run is loading. */
-        if (isCurrent()) $refresh.removeClass('is-loading').prop('disabled', false);
+        if (isCurrent()) {
+          $refresh.removeClass('is-loading').prop('disabled', false);
+          $widget.attr('aria-busy', 'false');
+        }
       }
 
-      var $textDiv = $('<div class="answers-insights__text"></div>');
+      /* a11y: the answer streams into a polite live region so screen readers
+       * announce the completed text without narrating every partial chunk. */
+      var $textDiv = $('<div class="answers-insights__text" role="status" aria-live="polite"></div>');
       var $reasoning = $root.find('.answers-insights__reasoning');
       var $reasoningContent = $root.find('.answers-insights__reasoning-content');
       var $followups = $root.find('.answers-insights__followups');
@@ -801,8 +871,12 @@ define(
             $btn.addClass('is-entering');
           });
 
-          /* Completion timestamp */
-          $root.find('.answers-insights__timestamp').text('Updated just now').addClass('is-visible');
+          /* Completion timestamp — record the time, show it, and tick it
+           * forward ("just now" → "3m ago") every 30s until the next run. */
+          $root.data('aiDoneAt', Date.now());
+          $root.data('aiRunCount', ($root.data('aiRunCount') || 0) + 1);
+          refreshTimestamp($root);
+          $root.data('aiTsTimer', setInterval(function () { refreshTimestamp($root); }, 30000));
         })
         .catch(function (err) {
           if (!isCurrent()) return;   /* superseded run — the new run owns the UI */
@@ -864,9 +938,10 @@ define(
           responseLength:    'medium',
           includeSelections: true,
           /* behaviour */
-          autoRefresh:       true,
-          autoRunOnLoad:     true,
-          showRefreshButton: true,
+          autoRefresh:         true,
+          autoRefreshCooldown: 5,
+          autoRunOnLoad:       true,
+          showRefreshButton:   true,
           showCopyButton:    true,
           showExportButton:  true,
           /* header */
@@ -877,6 +952,7 @@ define(
           /* font */
           fontFamily:        'default',
           fontSize:          13,
+          autoThemeColor:    true,
           fontColor:         { color: '#1a1a1a', index: -1 },
           fontBold:          false,
           fontItalic:        false,
@@ -933,13 +1009,14 @@ define(
             (props.displayTitle ? '' : ' style="display:none"') + '>' +
             escapeHtml(props.displayTitle || '') + '</h4>';
           var refreshHtml = props.showRefreshButton !== false
-            ? '<button class="answers-insights__refresh" title="Regenerate insight">' +
+            ? '<button class="answers-insights__refresh" title="Regenerate insight" aria-label="Regenerate insight">' +
                 ICON_REFRESH + ' Refresh' +
               '</button>'
             : '';
 
           $element.html(
-            '<div class="answers-insights">' +
+            '<div class="answers-insights" role="region" aria-label="' +
+                escapeHtml(props.displayTitle || 'AI Insight') + '" aria-busy="false">' +
               '<div class="answers-insights__header">' +
                 titleHtml +
                 '<div class="answers-insights__header-right">' +
@@ -959,8 +1036,8 @@ define(
                 '<div class="answers-insights__context-bar"></div>' +
                 '<div class="answers-insights__followups"></div>' +
                 '<div class="answers-insights__actions">' +
-                  '<button class="answers-insights__copy" title="Copy to clipboard" style="display:none">' + ICON_COPY + ' Copy</button>' +
-                  '<button class="answers-insights__print" title="Export as PDF" style="display:none">' + ICON_PRINT + ' Export</button>' +
+                  '<button class="answers-insights__copy" title="Copy to clipboard" aria-label="Copy insight to clipboard" style="display:none">' + ICON_COPY + ' Copy</button>' +
+                  '<button class="answers-insights__print" title="Export as PDF" aria-label="Export insight as PDF" style="display:none">' + ICON_PRINT + ' Export</button>' +
                 '</div>' +
                 '<div class="ai-prompt-toggle" style="display:none">' +
                   '<button class="ai-prompt-toggle__btn">' + ICON_CHEVRON + '<span>View exact prompt sent</span></button>' +
@@ -1102,6 +1179,8 @@ define(
           $element.find('.answers-insights__title')
             .text(props.displayTitle || '')
             .toggle(!!props.displayTitle);
+          $element.find('.answers-insights')
+            .attr('aria-label', props.displayTitle || 'AI Insight');
         }
 
         /* Sync behaviour-controlled visibility on every paint */
@@ -1116,6 +1195,14 @@ define(
         applyWidgetStyles($element.find('.answers-insights'), enrichedProps);
         applyTextStyles($element.find('.answers-insights__text'), enrichedProps);
         $element.find('.answers-insights').toggleClass('is-compact', $element.height() < 130);
+
+        /* Theme awareness — tag the widget when it sits on a dark background so
+         * the stylesheet can supply legible light-on-dark fallback colors. */
+        $element.find('.answers-insights')
+          .toggleClass('is-dark', detectDarkBackground($element[0]));
+
+        /* Keep the "Updated Xm ago" label current across repaints */
+        if ($element.data('aiState') === 'done') refreshTimestamp($element);
 
         /* Prompt transparency panel — keep visibility + content in sync live */
         var $promptToggle = $element.find('.ai-prompt-toggle');
@@ -1165,6 +1252,19 @@ define(
                   if ($element.data('aiState') === 'loading') return;
                   var p = $element.data('aiProps');
                   if (!p || p.autoRefresh === false) return;
+                  /* Consumption guard — collapse auto-refreshes that fire within
+                   * the cooldown of the previous run. Each run costs Qlik Answers
+                   * consumption, so this prevents rapid selection changes from
+                   * spending a request per click. Manual Refresh is never gated. */
+                  var cooldown = (p.autoRefreshCooldown != null ? p.autoRefreshCooldown : 5) * 1000;
+                  var lastStart = $element.data('aiLastRunStart') || 0;
+                  if (cooldown > 0 && (Date.now() - lastStart) < cooldown) {
+                    /* Re-arm once so the latest selection still gets an insight
+                     * after the cooldown elapses, rather than being dropped. */
+                    clearTimeout($element.data('selTimer'));
+                    $element.data('selTimer', setTimeout(selListener, cooldown - (Date.now() - lastStart)));
+                    return;
+                  }
                   generateInsight($element, p, $element.data('aiApp'), { force: true });
                 }, 800));
               };
@@ -1184,6 +1284,7 @@ define(
         var controller = $element.data('aiAbort');
         if (controller) { try { controller.abort(); } catch (e) {} }
         clearTimeout($element.data('selTimer'));
+        clearInterval($element.data('aiTsTimer'));
         var selState = $element.data('aiSelState');
         var listener = $element.data('aiSelListener');
         if (selState && selState.OnData && listener) {

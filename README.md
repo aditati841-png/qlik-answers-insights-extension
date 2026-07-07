@@ -5,7 +5,7 @@ configurable AI narrative panel onto the canvas that reads the app's current sel
 dimensions, and measures, then writes a plain-language summary — powered by **Qlik Answers**,
 with **no API key or backend to manage**.
 
-![Type](https://img.shields.io/badge/type-visualization-2563eb) ![Qlik Sense](https://img.shields.io/badge/Qlik%20Sense-%E2%89%A53.0.0-009845) ![Auth](https://img.shields.io/badge/auth-session%20cookie-555) ![Version](https://img.shields.io/badge/version-2.3.0-8b5cf6)
+![Type](https://img.shields.io/badge/type-visualization-2563eb) ![Qlik Sense](https://img.shields.io/badge/Qlik%20Sense-%E2%89%A53.0.0-009845) ![Auth](https://img.shields.io/badge/auth-session%20cookie-555) ![Version](https://img.shields.io/badge/version-2.4.0-8b5cf6)
 
 ---
 
@@ -48,11 +48,13 @@ Answers Insights closes that gap by embedding the narrative **directly in the sh
 |---|---|
 | 🧠 **Qlik Answers powered** | Grounded in your tenant's data |
 | 🔍 **Live selection context** | Active filters are injected into every prompt |
-| 🔄 **Auto-refresh** | Regenerates on selection change, with manual refresh + abort |
+| 🔄 **Auto-refresh + cooldown** | Regenerates on selection change (debounced), with a cooldown so rapid clicks don't burn consumption |
 | 📐 **Multiple dimensions & measures** | Native Qlik pickers feed the model the fields that matter |
 | ✍️ **Prompt control** | Instruction prompt, numbered questions, output style, length |
 | 👁️ **Prompt transparency** | Optional panel that shows the exact composed prompt |
-| 🎨 **Theme-aware UI** | Skeleton loader, streaming cursor, animated follow-up chips |
+| 🎨 **Theme-aware UI** | Follows the Qlik light/dark theme automatically; skeleton loader, streaming cursor, animated follow-up chips |
+| ♿ **Accessible** | Live-region announcements, `aria-busy` state, and labelled controls for screen readers |
+| 🕒 **Freshness label** | Shows how long ago the insight was generated ("Updated 3m ago") |
 | 📋 **Copy & export** | One-click copy, or open a print-ready PDF view |
 | 🔐 **No API key** | Authenticates off the user's existing Qlik Cloud session |
 
@@ -87,10 +89,17 @@ Settings live in the object's properties panel.
 | Include selection context | Auto-appends the active filter state to the prompt |
 
 ### Behaviour
-Auto-refresh on selection change, auto-run on load, and toggles for the refresh / copy / export buttons.
+| Field | Purpose |
+|-------|---------|
+| Auto-refresh on selection change | Regenerate automatically when the user changes a selection |
+| Auto-refresh cooldown (seconds) | Minimum gap between auto-refreshes; changes inside the window reuse the pending run instead of spending a new Answers request. `0` = refresh on every change. Manual **Refresh** always runs immediately |
+| Auto-run on load | Generate an insight when the sheet first opens |
+| Show refresh / copy / export buttons | Per-button visibility toggles |
 
 ### Appearance
-Header title, background, font (family, size, colour, weight), border, corner radius, padding, and line height.
+Header title, background, font (family, size, weight), border, corner radius, padding, and line height.
+**Match theme text color** is on by default — the text follows the Qlik theme so it stays legible on
+both light and dark sheets. Turn it off to pick a fixed font color.
 
 ### Other
 | Field | Purpose |
@@ -148,6 +157,18 @@ to the Qlik Cloud Management Console. Packaged builds are published on the
 ---
 
 ## Changelog
+
+### 2.4.0
+- **Accessibility** — the answer now renders into an `aria-live` region so screen readers announce
+  it, the widget reports `aria-busy` while generating, and the Refresh / Copy / Export controls have
+  explicit labels.
+- **Theme awareness** — text color follows the Qlik light/dark theme by default (new **Match theme
+  text color** toggle), and the widget detects a dark background and switches to legible light-on-dark
+  colors even when a theme leaves its color variables unset.
+- **Freshness label** — the header shows a live "Updated Xm ago" that ticks forward, replacing the
+  static "Updated just now", with a session insight count in its tooltip.
+- **Consumption cooldown** — a configurable auto-refresh cooldown (default 5s) collapses rapid
+  selection changes into a single Answers request; the manual Refresh button is never gated.
 
 ### 2.3.0
 - **Fixed a stale-run race** — clicking Refresh (or changing a selection) while a generation was

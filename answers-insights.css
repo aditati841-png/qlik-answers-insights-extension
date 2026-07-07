@@ -9,6 +9,16 @@
   box-sizing: border-box;
 }
 
+/* Dark-background fallback: when the widget sits on a dark surface but the Qlik
+ * theme hasn't supplied its color vars, the light-mode fallbacks (dark text)
+ * would be illegible. Redefining the vars here keeps every var(--qlik-*, …)
+ * reference below light-on-dark without touching each rule individually. */
+.answers-insights.is-dark {
+  --qlik-color-primary:   #f0f0f0;
+  --qlik-color-secondary: #a9a9a9;
+  --qlik-border-color:    #4a4a4a;
+}
+
 /* ─── Header ─────────────────────────────────────────────────────────────── */
 .answers-insights__header {
   display: flex;
