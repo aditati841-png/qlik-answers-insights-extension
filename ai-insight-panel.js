@@ -11,7 +11,7 @@
  *   POST /api/v1/cloud-assistants/{id}/actions/invoke
  */
 define(
-  ['qlik', 'jquery', './properties', 'css!./answers-insights.css'],
+  ['qlik', 'jquery', './properties', 'css!./ai-insight-panel.css'],
   function (qlik, $, properties) {
 
     /* ═══════════════════════════════════════════════════════════════════
@@ -90,7 +90,7 @@ define(
       });
 
       var pad = PADDING_VALUES[props.padding] || '10px 14px';
-      $widget.find('.answers-insights__body').css('padding', pad);
+      $widget.find('.ai-insight-panel__body').css('padding', pad);
     }
 
     /* ═══════════════════════════════════════════════════════════════════
@@ -217,9 +217,9 @@ define(
     }
 
     function renderDevView($root, props) {
-      var $dev = $root.find('.answers-insights__dev');
+      var $dev = $root.find('.ai-insight-panel__dev');
       if (!props || !props.devMode) { $dev.hide(); return; }
-      $dev.find('.answers-insights__dev-body').html(buildDevView($root.data('aiDebug')));
+      $dev.find('.ai-insight-panel__dev-body').html(buildDevView($root.data('aiDebug')));
       $dev.css('display', 'block');
     }
 
@@ -357,7 +357,7 @@ define(
     function ensureCsrfToken(root, debug) {
       if (_csrfTokens[root]) return Promise.resolve(_csrfTokens[root]);
       var url = root + '/csrf-token';
-      if (debug) console.log('[AnswersInsights] GET', url);
+      if (debug) console.log('[AIInsightPanel] GET', url);
       return fetch(url, { method: 'GET', credentials: 'include' })
         .then(function (res) {
           var token = res.headers.get('qlik-csrf-token') ||
@@ -369,7 +369,7 @@ define(
             );
           }
           _csrfTokens[root] = token;
-          if (debug) console.log('[AnswersInsights] CSRF token acquired.');
+          if (debug) console.log('[AIInsightPanel] CSRF token acquired.');
           return token;
         });
     }
@@ -400,11 +400,11 @@ define(
     function createThread(root, token, appId, signal, debug, dbg) {
       var url  = root + '/cloud-assistants/threads';
       var body = {
-        name:    'answers-insights-' + Date.now(),
+        name:    'ai-insight-panel-' + Date.now(),
         context: { type: 'app', id: appId, data: { mode: 'live', route: 'answers', custom: true } },
         messages: []
       };
-      if (debug) console.log('[AnswersInsights] createThread →', url, body);
+      if (debug) console.log('[AIInsightPanel] createThread →', url, body);
       if (dbg) dbg.requests.push({ method: 'POST', url: url, body: body });
       return fetch(url, {
         method: 'POST', credentials: 'include',
@@ -420,7 +420,7 @@ define(
       .then(function (data) {
         var id = data.id || (data.data && data.data.id);
         if (!id) throw new Error('No thread id in response: ' + JSON.stringify(data));
-        if (debug) console.log('[AnswersInsights] Thread id:', id);
+        if (debug) console.log('[AIInsightPanel] Thread id:', id);
         return id;
       });
     }
@@ -431,7 +431,7 @@ define(
         context: { type: 'app', id: appId, data: { mode: 'live', route: 'answers', custom: true, reasoning_mode: reasoningMode || 'fast' } },
         content: [{ text: promptText }]
       };
-      if (debug) console.log('[AnswersInsights] invoke →', url, body);
+      if (debug) console.log('[AIInsightPanel] invoke →', url, body);
       if (dbg) dbg.requests.push({ method: 'POST', url: url, body: body });
       return fetch(url, {
         method: 'POST', credentials: 'include',
@@ -450,7 +450,7 @@ define(
         return res.json().then(function (data) {
           var text = extractContentText(data) || data.text || data.answer ||
                      data.response || JSON.stringify(data);
-          if (debug) console.log('[AnswersInsights] response JSON:', data);
+          if (debug) console.log('[AIInsightPanel] response JSON:', data);
           if (onChunk) onChunk(text);
           return { text: text, lastData: data };
         });
@@ -573,7 +573,7 @@ define(
                  parsed.choices[0].delta && parsed.choices[0].delta.content) ||
                 parsed.text || parsed.content || parsed.answer || '';
               consume(chunk);
-              if (debug && chunk) console.log('[AnswersInsights] SSE chunk:', chunk);
+              if (debug && chunk) console.log('[AIInsightPanel] SSE chunk:', chunk);
             } catch (e) { consume(raw); }
           }
           return pump();
@@ -630,7 +630,7 @@ define(
       var ts = $root.data('aiDoneAt');
       if (!ts) return;
       var count = $root.data('aiRunCount') || 0;
-      $root.find('.answers-insights__timestamp')
+      $root.find('.ai-insight-panel__timestamp')
         .text('Updated ' + formatAgo(ts))
         .attr('title', count + (count === 1 ? ' insight' : ' insights') + ' generated this session')
         .addClass('is-visible');
@@ -693,13 +693,13 @@ define(
       $root.data('aiAbort', controller);
       $root.data('aiState', 'loading');
 
-      var $widget  = $root.find('.answers-insights');
-      var $body    = $root.find('.answers-insights__body');
-      var $refresh = $root.find('.answers-insights__refresh');
-      var $ctxBar  = $root.find('.answers-insights__context-bar');
+      var $widget  = $root.find('.ai-insight-panel');
+      var $body    = $root.find('.ai-insight-panel__body');
+      var $refresh = $root.find('.ai-insight-panel__refresh');
+      var $ctxBar  = $root.find('.ai-insight-panel__context-bar');
 
       $widget.attr('aria-busy', 'true');   /* a11y: announce work in progress */
-      $root.find('.answers-insights__timestamp').text('').removeClass('is-visible');
+      $root.find('.ai-insight-panel__timestamp').text('').removeClass('is-visible');
       if (prevState === 'idle') {
         $body.html(buildLoadingHtml());
       } else {
@@ -716,9 +716,9 @@ define(
       var signal         = controller ? controller.signal : undefined;
 
       if (debug) {
-        console.log('[AnswersInsights] appId:', appId);
-        console.log('[AnswersInsights] Prompt:\n', prompt);
-        console.log('[AnswersInsights] Selections:', selectionState);
+        console.log('[AIInsightPanel] appId:', appId);
+        console.log('[AIInsightPanel] Prompt:\n', prompt);
+        console.log('[AIInsightPanel] Selections:', selectionState);
       }
 
       /* Prompt transparency panel — show the exact text being sent */
@@ -778,12 +778,12 @@ define(
 
       /* a11y: the answer streams into a polite live region so screen readers
        * announce the completed text without narrating every partial chunk. */
-      var $textDiv = $('<div class="answers-insights__text" role="status" aria-live="polite"></div>');
-      var $reasoning = $root.find('.answers-insights__reasoning');
-      var $reasoningContent = $root.find('.answers-insights__reasoning-content');
-      var $followups = $root.find('.answers-insights__followups');
-      var $copyBtn   = $root.find('.answers-insights__copy');
-      var $printBtn  = $root.find('.answers-insights__print');
+      var $textDiv = $('<div class="ai-insight-panel__text" role="status" aria-live="polite"></div>');
+      var $reasoning = $root.find('.ai-insight-panel__reasoning');
+      var $reasoningContent = $root.find('.ai-insight-panel__reasoning-content');
+      var $followups = $root.find('.ai-insight-panel__followups');
+      var $copyBtn   = $root.find('.ai-insight-panel__copy');
+      var $printBtn  = $root.find('.ai-insight-panel__print');
 
       $reasoning.hide();
       $reasoningContent.empty().hide();
@@ -799,7 +799,7 @@ define(
       }
       function onChunk(partial) {
         if (!isCurrent()) return;
-        showText(renderMarkdown(partial) + '<span class="answers-insights__cursor"></span>');
+        showText(renderMarkdown(partial) + '<span class="ai-insight-panel__cursor"></span>');
       }
       function onReasoning(text) {
         if (!isCurrent()) return;
@@ -852,7 +852,7 @@ define(
             var followUps = extractFollowUpQuestions(lastData);
             if (followUps.length) {
               followUps.forEach(function (q) {
-                var $chip = $('<button class="answers-insights__followup-chip"></button>').text(q);
+                var $chip = $('<button class="ai-insight-panel__followup-chip"></button>').text(q);
                 $chip.on('click', function () {
                   var p = $root.data('aiProps') || {};
                   p = Object.assign ? Object.assign({}, p) : $.extend({}, p);
@@ -886,27 +886,27 @@ define(
           if (err && err.name === 'AbortError') {
             if (!timedOut) return;
             $body.html(
-              '<div class="answers-insights__error">' +
-              '<div class="answers-insights__error-icon">' + ICON_ERROR + '</div>' +
-              '<div class="answers-insights__error-content">' +
+              '<div class="ai-insight-panel__error">' +
+              '<div class="ai-insight-panel__error-icon">' + ICON_ERROR + '</div>' +
+              '<div class="ai-insight-panel__error-content">' +
               '<strong>Timed out</strong>' +
               '<span>Qlik Answers did not respond within ' + (TIMEOUT_MS / 1000) + 's.</span>' +
               '</div>' +
-              '<button class="answers-insights__error-retry">Try again</button>' +
+              '<button class="ai-insight-panel__error-retry">Try again</button>' +
               '</div>'
             );
             $root.data('aiState', 'error');
             return;
           }
-          if (debug) console.error('[AnswersInsights]', err);
+          if (debug) console.error('[AIInsightPanel]', err);
           $body.html(
-            '<div class="answers-insights__error">' +
-            '<div class="answers-insights__error-icon">' + ICON_ERROR + '</div>' +
-            '<div class="answers-insights__error-content">' +
+            '<div class="ai-insight-panel__error">' +
+            '<div class="ai-insight-panel__error-icon">' + ICON_ERROR + '</div>' +
+            '<div class="ai-insight-panel__error-content">' +
             '<strong>Could not generate insight</strong>' +
             '<span>' + escapeHtml(err && err.message ? err.message : String(err)) + '</span>' +
             '</div>' +
-            '<button class="answers-insights__error-retry">Try again</button>' +
+            '<button class="ai-insight-panel__error-retry">Try again</button>' +
             '</div>'
           );
           $root.data('aiState', 'error');
@@ -1001,68 +1001,68 @@ define(
         $element.data('aiApp',   app);
 
         /* First paint — build widget chrome + bind handlers once */
-        if (!$element.find('.answers-insights').length) {
+        if (!$element.find('.ai-insight-panel').length) {
           /* Always render the h4 (hidden when blank) so a title added later
            * in the properties panel appears without rebuilding the widget. */
           var titleHtml =
-            '<h4 class="answers-insights__title"' +
+            '<h4 class="ai-insight-panel__title"' +
             (props.displayTitle ? '' : ' style="display:none"') + '>' +
             escapeHtml(props.displayTitle || '') + '</h4>';
           var refreshHtml = props.showRefreshButton !== false
-            ? '<button class="answers-insights__refresh" title="Regenerate insight" aria-label="Regenerate insight">' +
+            ? '<button class="ai-insight-panel__refresh" title="Regenerate insight" aria-label="Regenerate insight">' +
                 ICON_REFRESH + ' Refresh' +
               '</button>'
             : '';
 
           $element.html(
-            '<div class="answers-insights" role="region" aria-label="' +
+            '<div class="ai-insight-panel" role="region" aria-label="' +
                 escapeHtml(props.displayTitle || 'AI Insight Panel') + '" aria-busy="false">' +
-              '<div class="answers-insights__header">' +
+              '<div class="ai-insight-panel__header">' +
                 titleHtml +
-                '<div class="answers-insights__header-right">' +
-                  '<span class="answers-insights__timestamp"></span>' +
+                '<div class="ai-insight-panel__header-right">' +
+                  '<span class="ai-insight-panel__timestamp"></span>' +
                   refreshHtml +
                 '</div>' +
               '</div>' +
-              '<div class="answers-insights__body">' +
-                '<div class="answers-insights__placeholder">' +
+              '<div class="ai-insight-panel__body">' +
+                '<div class="ai-insight-panel__placeholder">' +
                   ICON_PLACEHOLDER +
                   '<p>Enter a prompt in the properties panel,<br>' +
                   'then click <strong>Refresh</strong> to generate insight.<br>' +
                   '<span style="font-size:11px;color:#999">Dimensions &amp; measures are optional.</span></p>' +
                 '</div>' +
               '</div>' +
-              '<div class="answers-insights__footer">' +
-                '<div class="answers-insights__context-bar"></div>' +
-                '<div class="answers-insights__followups"></div>' +
-                '<div class="answers-insights__actions">' +
-                  '<button class="answers-insights__copy" title="Copy to clipboard" aria-label="Copy insight to clipboard" style="display:none">' + ICON_COPY + ' Copy</button>' +
-                  '<button class="answers-insights__print" title="Export as PDF" aria-label="Export insight as PDF" style="display:none">' + ICON_PRINT + ' Export</button>' +
+              '<div class="ai-insight-panel__footer">' +
+                '<div class="ai-insight-panel__context-bar"></div>' +
+                '<div class="ai-insight-panel__followups"></div>' +
+                '<div class="ai-insight-panel__actions">' +
+                  '<button class="ai-insight-panel__copy" title="Copy to clipboard" aria-label="Copy insight to clipboard" style="display:none">' + ICON_COPY + ' Copy</button>' +
+                  '<button class="ai-insight-panel__print" title="Export as PDF" aria-label="Export insight as PDF" style="display:none">' + ICON_PRINT + ' Export</button>' +
                 '</div>' +
                 '<div class="ai-prompt-toggle" style="display:none">' +
                   '<button class="ai-prompt-toggle__btn">' + ICON_CHEVRON + '<span>View exact prompt sent</span></button>' +
                   '<pre class="ai-prompt-toggle__pre"></pre>' +
                 '</div>' +
-                '<div class="answers-insights__reasoning" style="display:none">' +
-                  '<button class="answers-insights__reasoning-btn">' + ICON_CHEVRON + '<span>Show reasoning</span></button>' +
-                  '<div class="answers-insights__reasoning-content"></div>' +
+                '<div class="ai-insight-panel__reasoning" style="display:none">' +
+                  '<button class="ai-insight-panel__reasoning-btn">' + ICON_CHEVRON + '<span>Show reasoning</span></button>' +
+                  '<div class="ai-insight-panel__reasoning-content"></div>' +
                 '</div>' +
               '</div>' +
-              '<div class="answers-insights__dev" style="display:none">' +
-                '<button class="answers-insights__dev-header is-open">' + ICON_CHEVRON + ICON_WRENCH + '<span>Developer view</span></button>' +
-                '<div class="answers-insights__dev-body"></div>' +
+              '<div class="ai-insight-panel__dev" style="display:none">' +
+                '<button class="ai-insight-panel__dev-header is-open">' + ICON_CHEVRON + ICON_WRENCH + '<span>Developer view</span></button>' +
+                '<div class="ai-insight-panel__dev-body"></div>' +
               '</div>' +
             '</div>'
           );
           $element.data('aiState', 'idle');
 
-          $element.on('click', '.answers-insights__refresh', function () {
+          $element.on('click', '.ai-insight-panel__refresh', function () {
             var p = $element.data('aiProps') || {};
             generateInsight($element, p, $element.data('aiApp'), { force: true });
           });
 
-          $element.on('click', '.answers-insights__reasoning-btn', function () {
-            var $content = $element.find('.answers-insights__reasoning-content');
+          $element.on('click', '.ai-insight-panel__reasoning-btn', function () {
+            var $content = $element.find('.ai-insight-panel__reasoning-content');
             var $btn = $(this);
             if ($content.is(':visible')) {
               $content.hide();
@@ -1085,8 +1085,8 @@ define(
             }
           });
 
-          $element.on('click', '.answers-insights__dev-header', function () {
-            var $devBody = $element.find('.answers-insights__dev-body');
+          $element.on('click', '.ai-insight-panel__dev-header', function () {
+            var $devBody = $element.find('.ai-insight-panel__dev-body');
             var $btn = $(this);
             if ($devBody.is(':visible')) {
               $devBody.hide();
@@ -1117,9 +1117,9 @@ define(
             }
           });
 
-          $element.on('click', '.answers-insights__copy', function () {
+          $element.on('click', '.ai-insight-panel__copy', function () {
             var $btn  = $(this);
-            var text  = $element.find('.answers-insights__text').text();
+            var text  = $element.find('.ai-insight-panel__text').text();
             if (!text) return;
             var restore = function () {
               setTimeout(function () {
@@ -1145,10 +1145,10 @@ define(
             }
           });
 
-          $element.on('click', '.answers-insights__print', function () {
-            var title    = $element.find('.answers-insights__title').text() || 'AI Insight Panel';
-            var bodyHtml = $element.find('.answers-insights__text').html() || '';
-            var ctxText  = $element.find('.answers-insights__context-bar').text() || '';
+          $element.on('click', '.ai-insight-panel__print', function () {
+            var title    = $element.find('.ai-insight-panel__title').text() || 'AI Insight Panel';
+            var bodyHtml = $element.find('.ai-insight-panel__text').html() || '';
+            var ctxText  = $element.find('.ai-insight-panel__context-bar').text() || '';
             var win = window.open('', '_blank', 'width=700,height=600');
             if (!win) return;
             win.document.write(
@@ -1169,36 +1169,36 @@ define(
             win.print();
           });
 
-          $element.on('click', '.answers-insights__error-retry', function () {
+          $element.on('click', '.ai-insight-panel__error-retry', function () {
             var p = $element.data('aiProps') || {};
             generateInsight($element, p, $element.data('aiApp'), { force: true });
           });
 
         } else {
           /* Subsequent paints — keep chrome in sync with property changes */
-          $element.find('.answers-insights__title')
+          $element.find('.ai-insight-panel__title')
             .text(props.displayTitle || '')
             .toggle(!!props.displayTitle);
-          $element.find('.answers-insights')
+          $element.find('.ai-insight-panel')
             .attr('aria-label', props.displayTitle || 'AI Insight Panel');
         }
 
         /* Sync behaviour-controlled visibility on every paint */
-        $element.find('.answers-insights__refresh').toggle(enrichedProps.showRefreshButton !== false);
+        $element.find('.ai-insight-panel__refresh').toggle(enrichedProps.showRefreshButton !== false);
         var hasDone = $element.data('aiState') === 'done';
         if (hasDone) {
-          $element.find('.answers-insights__copy').toggle(enrichedProps.showCopyButton !== false);
-          $element.find('.answers-insights__print').toggle(enrichedProps.showExportButton !== false);
+          $element.find('.ai-insight-panel__copy').toggle(enrichedProps.showCopyButton !== false);
+          $element.find('.ai-insight-panel__print').toggle(enrichedProps.showExportButton !== false);
         }
 
         /* Apply container + text styles on every paint so property changes render live */
-        applyWidgetStyles($element.find('.answers-insights'), enrichedProps);
-        applyTextStyles($element.find('.answers-insights__text'), enrichedProps);
-        $element.find('.answers-insights').toggleClass('is-compact', $element.height() < 130);
+        applyWidgetStyles($element.find('.ai-insight-panel'), enrichedProps);
+        applyTextStyles($element.find('.ai-insight-panel__text'), enrichedProps);
+        $element.find('.ai-insight-panel').toggleClass('is-compact', $element.height() < 130);
 
         /* Theme awareness — tag the widget when it sits on a dark background so
          * the stylesheet can supply legible light-on-dark fallback colors. */
-        $element.find('.answers-insights')
+        $element.find('.ai-insight-panel')
           .toggleClass('is-dark', detectDarkBackground($element[0]));
 
         /* Keep the "Updated Xm ago" label current across repaints */
@@ -1226,7 +1226,7 @@ define(
           }
           renderDevView($element, enrichedProps);
         } else {
-          $element.find('.answers-insights__dev').hide();
+          $element.find('.ai-insight-panel__dev').hide();
         }
 
         /* Auto-run once on first analysis-mode load */

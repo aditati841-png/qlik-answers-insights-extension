@@ -1,6 +1,6 @@
-/* ─── Answers Insights Extension ─────────────────────────────────────────── */
+/* ─── AI Insight Panel Extension ─────────────────────────────────────────── */
 
-.answers-insights {
+.ai-insight-panel {
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -13,14 +13,14 @@
  * theme hasn't supplied its color vars, the light-mode fallbacks (dark text)
  * would be illegible. Redefining the vars here keeps every var(--qlik-*, …)
  * reference below light-on-dark without touching each rule individually. */
-.answers-insights.is-dark {
+.ai-insight-panel.is-dark {
   --qlik-color-primary:   #f0f0f0;
   --qlik-color-secondary: #a9a9a9;
   --qlik-border-color:    #4a4a4a;
 }
 
 /* ─── Header ─────────────────────────────────────────────────────────────── */
-.answers-insights__header {
+.ai-insight-panel__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -28,7 +28,7 @@
   flex-shrink: 0;
 }
 
-.answers-insights__title {
+.ai-insight-panel__title {
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
@@ -40,7 +40,7 @@
   gap: 6px;
 }
 
-.answers-insights__title::before {
+.ai-insight-panel__title::before {
   content: '';
   display: inline-block;
   width: 3px;
@@ -51,14 +51,14 @@
 }
 
 /* Groups timestamp + refresh button on the right */
-.answers-insights__header-right {
+.ai-insight-panel__header-right {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
 /* "Updated just now" freshness indicator */
-.answers-insights__timestamp {
+.ai-insight-panel__timestamp {
   font-size: 10px;
   color: var(--qlik-color-secondary, #bbb);
   opacity: 0;
@@ -67,11 +67,11 @@
   pointer-events: none;
 }
 
-.answers-insights__timestamp.is-visible {
+.ai-insight-panel__timestamp.is-visible {
   opacity: 1;
 }
 
-.answers-insights__refresh {
+.ai-insight-panel__refresh {
   background: none;
   border: 1px solid transparent;
   cursor: pointer;
@@ -86,28 +86,28 @@
   font-family: inherit;
 }
 
-.answers-insights__refresh:hover {
+.ai-insight-panel__refresh:hover {
   background: var(--qlik-color-hover-bg, #f0f0f0);
   border-color: var(--qlik-border-color, #ddd);
   color: var(--qlik-color-primary, #1a1a1a);
 }
 
-.answers-insights__refresh svg {
+.ai-insight-panel__refresh svg {
   width: 14px;
   height: 14px;
 }
 
-.answers-insights__refresh.is-loading svg {
+.ai-insight-panel__refresh.is-loading svg {
   animation: spin 1s linear infinite;
 }
 
-.answers-insights__refresh:disabled {
+.ai-insight-panel__refresh:disabled {
   opacity: 0.5;
   cursor: default;
 }
 
 /* ─── Content area ───────────────────────────────────────────────────────── */
-.answers-insights__body {
+.ai-insight-panel__body {
   flex: 1;
   overflow-y: auto;
   padding: 8px 12px 12px;
@@ -116,18 +116,18 @@
   scrollbar-color: var(--qlik-border-color, #d0d0d0) transparent;
 }
 
-.answers-insights__body::-webkit-scrollbar { width: 6px; }
-.answers-insights__body::-webkit-scrollbar-track { background: transparent; }
-.answers-insights__body::-webkit-scrollbar-thumb {
+.ai-insight-panel__body::-webkit-scrollbar { width: 6px; }
+.ai-insight-panel__body::-webkit-scrollbar-track { background: transparent; }
+.ai-insight-panel__body::-webkit-scrollbar-thumb {
   background: var(--qlik-border-color, #d0d0d0);
   border-radius: 3px;
 }
-.answers-insights__body::-webkit-scrollbar-thumb:hover {
+.ai-insight-panel__body::-webkit-scrollbar-thumb:hover {
   background: var(--qlik-color-secondary, #b0b0b0);
 }
 
 /* ─── Placeholder ────────────────────────────────────────────────────────── */
-.answers-insights__placeholder {
+.ai-insight-panel__placeholder {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -137,14 +137,14 @@
   gap: 12px;
 }
 
-.answers-insights__placeholder svg {
+.ai-insight-panel__placeholder svg {
   width: 44px;
   height: 44px;
   opacity: 0.25;
   color: var(--lui-color-green-60, #009845);
 }
 
-.answers-insights__placeholder p {
+.ai-insight-panel__placeholder p {
   margin: 0;
   font-size: 12px;
   line-height: 1.55;
@@ -236,18 +236,18 @@
 }
 
 /* Compact mode: hide heavy elements on small-height widgets */
-.answers-insights.is-compact .ai-loading {
+.ai-insight-panel.is-compact .ai-loading {
   gap: 6px;
   padding: 12px;
 }
 
-.answers-insights.is-compact .ai-loading__eq,
-.answers-insights.is-compact .ai-loading__skeleton {
+.ai-insight-panel.is-compact .ai-loading__eq,
+.ai-insight-panel.is-compact .ai-loading__skeleton {
   display: none;
 }
 
 /* ─── Error state ────────────────────────────────────────────────────────── */
-.answers-insights__error {
+.ai-insight-panel__error {
   display: flex;
   align-items: flex-start;
   gap: 9px;
@@ -258,31 +258,31 @@
   animation: fadeIn 0.25s ease-out;
 }
 
-.answers-insights__error-icon {
+.ai-insight-panel__error-icon {
   flex-shrink: 0;
   margin-top: 1px;
   color: #e84646;
 }
 
-.answers-insights__error-icon svg {
+.ai-insight-panel__error-icon svg {
   width: 14px;
   height: 14px;
   display: block;
 }
 
-.answers-insights__error-content {
+.ai-insight-panel__error-content {
   flex: 1;
   min-width: 0;
 }
 
-.answers-insights__error-content strong {
+.ai-insight-panel__error-content strong {
   display: block;
   font-size: 12px;
   color: #c0392b;
   margin-bottom: 3px;
 }
 
-.answers-insights__error-content span {
+.ai-insight-panel__error-content span {
   font-size: 11px;
   color: #c0392b;
   opacity: 0.85;
@@ -290,7 +290,7 @@
   word-break: break-word;
 }
 
-.answers-insights__error-retry {
+.ai-insight-panel__error-retry {
   flex-shrink: 0;
   align-self: center;
   background: none;
@@ -305,32 +305,32 @@
   transition: background 0.15s, color 0.15s;
 }
 
-.answers-insights__error-retry:hover {
+.ai-insight-panel__error-retry:hover {
   background: #e84646;
   color: #fff;
 }
 
 /* ─── Generated text ─────────────────────────────────────────────────────── */
-.answers-insights__text {
+.ai-insight-panel__text {
   line-height: 1.65;
   color: var(--qlik-color-primary, #1a1a1a);
   animation: fadeIn 0.3s ease-out;
 }
 
-.answers-insights__text p { margin: 0 0 0.75em; }
-.answers-insights__text p:last-child { margin-bottom: 0; }
+.ai-insight-panel__text p { margin: 0 0 0.75em; }
+.ai-insight-panel__text p:last-child { margin-bottom: 0; }
 
-.answers-insights__text ul,
-.answers-insights__text ol {
+.ai-insight-panel__text ul,
+.ai-insight-panel__text ol {
   margin: 0 0 0.75em;
   padding-left: 1.4em;
 }
 
-.answers-insights__text li { margin-bottom: 0.3em; }
-.answers-insights__text strong { font-weight: 600; }
+.ai-insight-panel__text li { margin-bottom: 0.3em; }
+.ai-insight-panel__text strong { font-weight: 600; }
 
 /* Streaming cursor */
-.answers-insights__cursor {
+.ai-insight-panel__cursor {
   display: inline-block;
   width: 2px;
   height: 1em;
@@ -347,13 +347,13 @@
 }
 
 /* ─── Footer — unified bottom zone ──────────────────────────────────────── */
-.answers-insights__footer {
+.ai-insight-panel__footer {
   flex-shrink: 0;
   border-top: 1px solid var(--qlik-border-color, #ebebeb);
 }
 
 /* ─── Context bar — selection pills ─────────────────────────────────────── */
-.answers-insights__context-bar {
+.ai-insight-panel__context-bar {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -407,7 +407,7 @@
 }
 
 /* ─── Follow-up chips — single-row horizontal scroll ────────────────────── */
-.answers-insights__followups {
+.ai-insight-panel__followups {
   display: flex;
   flex-wrap: nowrap;
   overflow-x: auto;
@@ -431,10 +431,10 @@
   );
 }
 
-.answers-insights__followups::-webkit-scrollbar { display: none; }
-.answers-insights__followups:empty { padding: 0; }
+.ai-insight-panel__followups::-webkit-scrollbar { display: none; }
+.ai-insight-panel__followups:empty { padding: 0; }
 
-.answers-insights__followup-chip {
+.ai-insight-panel__followup-chip {
   background: none;
   border: 1px solid var(--qlik-border-color, #ccc);
   border-radius: 12px;
@@ -451,18 +451,18 @@
   animation: ai-chip-in 0.35s ease-out forwards;
 }
 
-.answers-insights__followup-chip:nth-child(1) { animation-delay: 0.00s; }
-.answers-insights__followup-chip:nth-child(2) { animation-delay: 0.06s; }
-.answers-insights__followup-chip:nth-child(3) { animation-delay: 0.12s; }
-.answers-insights__followup-chip:nth-child(4) { animation-delay: 0.18s; }
-.answers-insights__followup-chip:nth-child(5) { animation-delay: 0.24s; }
+.ai-insight-panel__followup-chip:nth-child(1) { animation-delay: 0.00s; }
+.ai-insight-panel__followup-chip:nth-child(2) { animation-delay: 0.06s; }
+.ai-insight-panel__followup-chip:nth-child(3) { animation-delay: 0.12s; }
+.ai-insight-panel__followup-chip:nth-child(4) { animation-delay: 0.18s; }
+.ai-insight-panel__followup-chip:nth-child(5) { animation-delay: 0.24s; }
 
 @keyframes ai-chip-in {
   from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0);   }
 }
 
-.answers-insights__followup-chip:hover {
+.ai-insight-panel__followup-chip:hover {
   background: var(--qlik-color-hover-bg, #f0f0f0);
   border-color: var(--lui-color-green-60, #009845);
   color: var(--lui-color-green-60, #009845);
@@ -471,15 +471,15 @@
 }
 
 /* ─── Action bar ─────────────────────────────────────────────────────────── */
-.answers-insights__actions {
+.ai-insight-panel__actions {
   display: flex;
   gap: 4px;
   align-items: center;
   padding: 2px 12px 4px;
 }
 
-.answers-insights__copy,
-.answers-insights__print {
+.ai-insight-panel__copy,
+.ai-insight-panel__print {
   background: none;
   border: none;
   cursor: pointer;
@@ -495,8 +495,8 @@
 }
 
 /* Slide-in animation triggered by the is-entering class */
-.answers-insights__copy.is-entering,
-.answers-insights__print.is-entering {
+.ai-insight-panel__copy.is-entering,
+.ai-insight-panel__print.is-entering {
   animation: ai-action-in 0.25s ease-out;
 }
 
@@ -505,18 +505,18 @@
   to   { opacity: 1; transform: translateY(0);   }
 }
 
-.answers-insights__copy:hover,
-.answers-insights__print:hover {
+.ai-insight-panel__copy:hover,
+.ai-insight-panel__print:hover {
   background: var(--qlik-color-hover-bg, #f0f0f0);
   color: var(--qlik-color-primary, #333);
 }
 
-.answers-insights__copy.is-success {
+.ai-insight-panel__copy.is-success {
   color: var(--lui-color-green-60, #009845);
 }
 
-.answers-insights__copy svg,
-.answers-insights__print svg {
+.ai-insight-panel__copy svg,
+.ai-insight-panel__print svg {
   width: 13px;
   height: 13px;
 }
@@ -568,11 +568,11 @@
 }
 
 /* ─── Reasoning section ──────────────────────────────────────────────────── */
-.answers-insights__reasoning {
+.ai-insight-panel__reasoning {
   padding: 2px 12px 6px;
 }
 
-.answers-insights__reasoning-btn {
+.ai-insight-panel__reasoning-btn {
   background: none;
   border: none;
   cursor: pointer;
@@ -586,17 +586,17 @@
   gap: 4px;
 }
 
-.answers-insights__reasoning-btn:hover { color: var(--qlik-color-primary, #333); }
+.ai-insight-panel__reasoning-btn:hover { color: var(--qlik-color-primary, #333); }
 
-.answers-insights__reasoning-btn svg {
+.ai-insight-panel__reasoning-btn svg {
   width: 10px;
   height: 10px;
   transition: transform 0.2s ease;
 }
 
-.answers-insights__reasoning-btn.is-open svg { transform: rotate(180deg); }
+.ai-insight-panel__reasoning-btn.is-open svg { transform: rotate(180deg); }
 
-.answers-insights__reasoning-content {
+.ai-insight-panel__reasoning-content {
   display: none;
   font-size: 11px;
   color: #777;
@@ -613,13 +613,13 @@
 }
 
 /* ─── Developer view ─────────────────────────────────────────────────────── */
-.answers-insights__dev {
+.ai-insight-panel__dev {
   flex-shrink: 0;
   border-top: 1px solid var(--qlik-border-color, #ebebeb);
   background: var(--qlik-color-hover-bg, #fafafa);
 }
 
-.answers-insights__dev-header {
+.ai-insight-panel__dev-header {
   width: 100%;
   text-align: left;
   background: none;
@@ -638,23 +638,23 @@
 }
 
 /* Chevron (first SVG) rotates; wrench (second SVG) stays fixed */
-.answers-insights__dev-header > svg:first-child {
+.ai-insight-panel__dev-header > svg:first-child {
   width: 10px;
   height: 10px;
   transition: transform 0.2s ease;
 }
 
-.answers-insights__dev-header > svg:nth-child(2) {
+.ai-insight-panel__dev-header > svg:nth-child(2) {
   width: 12px;
   height: 12px;
   opacity: 0.55;
 }
 
-.answers-insights__dev-header.is-open > svg:first-child {
+.ai-insight-panel__dev-header.is-open > svg:first-child {
   transform: rotate(180deg);
 }
 
-.answers-insights__dev-body {
+.ai-insight-panel__dev-body {
   max-height: 340px;
   overflow-y: auto;
   padding: 2px 12px 12px;

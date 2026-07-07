@@ -5,7 +5,7 @@ configurable AI narrative panel onto the canvas that reads the app's current sel
 dimensions, and measures, then writes a plain-language summary — powered by **Qlik Answers**,
 with **no API key or backend to manage**.
 
-![Type](https://img.shields.io/badge/type-visualization-2563eb) ![Qlik Sense](https://img.shields.io/badge/Qlik%20Sense-%E2%89%A53.0.0-009845) ![Auth](https://img.shields.io/badge/auth-session%20cookie-555) ![Version](https://img.shields.io/badge/version-2.4.0-8b5cf6)
+![Type](https://img.shields.io/badge/type-visualization-2563eb) ![Qlik Sense](https://img.shields.io/badge/Qlik%20Sense-%E2%89%A53.0.0-009845) ![Auth](https://img.shields.io/badge/auth-session%20cookie-555) ![Version](https://img.shields.io/badge/version-2.4.1-8b5cf6)
 
 ---
 
@@ -62,7 +62,7 @@ AI Insight Panel closes that gap by embedding the narrative **directly in the sh
 
 ## Installation
 
-1. Download `answers-insights.zip` from the [latest release](../../releases/latest).
+1. Download `ai-insight-panel.zip` from the [latest release](../../releases/latest).
 2. Qlik Cloud → **Management Console → Extensions → Add**, and upload the zip.
 3. Open any app → **Edit sheet** → drag **AI Insight Panel** onto the canvas.
 4. Configure the prompt and questions in the properties panel, then click **Refresh**.
@@ -143,20 +143,26 @@ You stay in control of the dials:
 
 | File | Purpose |
 |------|---------|
-| `answers-insights.qext` | Extension metadata (name, version, icon) |
-| `answers-insights.js`   | Main extension — rendering, generation lifecycle, response parsing |
+| `ai-insight-panel.qext` | Extension metadata (name, version, icon) |
+| `ai-insight-panel.js`   | Main extension — rendering, generation lifecycle, response parsing |
 | `properties.js`         | Properties panel definition |
-| `answers-insights.css`  | Styling — skeleton loader, streaming cursor, chips, states |
+| `ai-insight-panel.css`  | Styling — skeleton loader, streaming cursor, chips, states |
 | `gen-guide.js` + `package.json` | Node script that generates the Word setup guide (`node gen-guide.js`) |
 
-To package the extension, zip `answers-insights.qext`, `answers-insights.js`, `properties.js`,
-and `answers-insights.css` together at the archive root (no folder inside), then upload the zip
+To package the extension, zip `ai-insight-panel.qext`, `ai-insight-panel.js`, `properties.js`,
+and `ai-insight-panel.css` together at the archive root (no folder inside), then upload the zip
 to the Qlik Cloud Management Console. Packaged builds are published on the
 [releases page](../../releases/latest).
 
 ---
 
 ## Changelog
+
+### 2.4.1
+- **Renamed the extension to "AI Insight Panel"** (was "Answers Insights"). The rename is applied
+  end to end: the `.qext` display name, default widget title, source file names
+  (`ai-insight-panel.js` / `.css` / `.qext`), CSS class prefix (`.ai-insight-panel__*`), and the
+  packaged zip. The GitHub repository name and npm package name were intentionally left unchanged.
 
 ### 2.4.0
 - **Accessibility** — the answer now renders into an `aria-live` region so screen readers announce
