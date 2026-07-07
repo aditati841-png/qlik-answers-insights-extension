@@ -213,7 +213,7 @@ const doc = new Document({
         alignment: AlignmentType.RIGHT,
         border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: MID_GREY } },
         spacing: { after: 120 },
-        children: [new TextRun({ text: 'Answers Insights  |  Qlik Sense Extension', font: 'Arial', size: 18, color: '888888' })]
+        children: [new TextRun({ text: 'AI Insight Panel  |  Qlik Sense Extension', font: 'Arial', size: 18, color: '888888' })]
       })]})
     },
     footers: {
@@ -235,7 +235,7 @@ const doc = new Document({
       new Paragraph({
         alignment: AlignmentType.CENTER,
         spacing: { before: 1200, after: 200 },
-        children: [new TextRun({ text: 'Answers Insights', font: 'Arial', size: 64, bold: true, color: BRAND_GREEN })]
+        children: [new TextRun({ text: 'AI Insight Panel', font: 'Arial', size: 64, bold: true, color: BRAND_GREEN })]
       }),
       new Paragraph({
         alignment: AlignmentType.CENTER,
@@ -274,7 +274,7 @@ const doc = new Document({
       // ── 1. Overview ────────────────────────────────────────────────────────
       h1('1. Overview'),
       body([
-        run('Answers Insights is a Qlik Sense extension that uses the '),
+        run('AI Insight Panel is a Qlik Sense extension that uses the '),
         bold('Qlik Answers API'),
         run(' to generate natural-language summaries directly inside any Qlik Cloud app. Instead of reading numbers and building your own narrative, the extension does it for you — responding to your app\'s live selections and filters in real time.')
       ]),
@@ -307,7 +307,7 @@ const doc = new Document({
       numbered([run('Open a '), bold('Qlik Cloud app'), run(' where you want to display insights.')]),
       numbered([run('Enter '), bold('Edit mode'), run(' (pencil icon, top right).')]),
       numbered([run('In the '), bold('Assets panel'), run(' on the left, find '), bold('Custom objects'), run(' and expand it.')]),
-      numbered([run('Drag '), bold('Answers Insights'), run(' onto the sheet, or double-click to add it.')]),
+      numbered([run('Drag '), bold('AI Insight Panel'), run(' onto the sheet, or double-click to add it.')]),
       numbered('Resize and position the object as needed.'),
       numbered([run('Open the '), bold('Properties panel'), run(' (right side) to configure it — see Section 3.')]),
       numbered([run('Click '), bold('Done editing'), run(' to return to analysis mode. The extension will run automatically.')]),
@@ -531,7 +531,7 @@ const doc = new Document({
       h3('Will it re-run automatically when I change a selection?'),
       body('Not automatically. After making a selection, click the Refresh button on the object. This is intentional — automatic re-runs on every click could trigger many slow API calls.'),
       sp(),
-      h3('Can I have multiple Answers Insights objects on the same sheet?'),
+      h3('Can I have multiple AI Insight Panel objects on the same sheet?'),
       body('Yes. Each object has its own prompt, configuration, and independent state. You could, for example, have one asking about sales trends and another about customer satisfaction on the same sheet.'),
       sp(),
       h3('Can I hide the prompt from end users?'),
@@ -549,13 +549,13 @@ const doc = new Document({
       new Paragraph({
         alignment: AlignmentType.CENTER,
         spacing: { before: 0, after: 0 },
-        children: [new TextRun({ text: 'Answers Insights  •  Qlik Sense Extension  •  v1.0  •  June 2026', font: 'Arial', size: 18, color: '888888', italics: true })]
+        children: [new TextRun({ text: 'AI Insight Panel  •  Qlik Sense Extension  •  v1.0  •  June 2026', font: 'Arial', size: 18, color: '888888', italics: true })]
       }),
     ]
   }]
 });
 
 Packer.toBuffer(doc).then(function(buf) {
-  fs.writeFileSync('Answers Insights - Setup Guide.docx', buf);
+  fs.writeFileSync('AI Insight Panel - Setup Guide.docx', buf);
   console.log('Done');
 });

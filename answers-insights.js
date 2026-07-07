@@ -1,5 +1,5 @@
 /**
- * Answers Insights — Qlik Sense extension
+ * AI Insight Panel — Qlik Sense extension
  *
  * Calls the Qlik Cloud Assistants API to generate natural-language insight
  * text directly on the sheet. No API key required — uses the in-browser
@@ -945,7 +945,7 @@ define(
           showCopyButton:    true,
           showExportButton:  true,
           /* header */
-          displayTitle:      'AI Insight',
+          displayTitle:      'AI Insight Panel',
           /* background */
           bgTransparent:     true,
           bgColor:           { color: '#ffffff', index: -1 },
@@ -1016,7 +1016,7 @@ define(
 
           $element.html(
             '<div class="answers-insights" role="region" aria-label="' +
-                escapeHtml(props.displayTitle || 'AI Insight') + '" aria-busy="false">' +
+                escapeHtml(props.displayTitle || 'AI Insight Panel') + '" aria-busy="false">' +
               '<div class="answers-insights__header">' +
                 titleHtml +
                 '<div class="answers-insights__header-right">' +
@@ -1146,7 +1146,7 @@ define(
           });
 
           $element.on('click', '.answers-insights__print', function () {
-            var title    = $element.find('.answers-insights__title').text() || 'AI Insight';
+            var title    = $element.find('.answers-insights__title').text() || 'AI Insight Panel';
             var bodyHtml = $element.find('.answers-insights__text').html() || '';
             var ctxText  = $element.find('.answers-insights__context-bar').text() || '';
             var win = window.open('', '_blank', 'width=700,height=600');
@@ -1180,7 +1180,7 @@ define(
             .text(props.displayTitle || '')
             .toggle(!!props.displayTitle);
           $element.find('.answers-insights')
-            .attr('aria-label', props.displayTitle || 'AI Insight');
+            .attr('aria-label', props.displayTitle || 'AI Insight Panel');
         }
 
         /* Sync behaviour-controlled visibility on every paint */

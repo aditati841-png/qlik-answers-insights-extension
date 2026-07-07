@@ -1,6 +1,6 @@
-# Answers Insights — Qlik Sense Extension
+# AI Insight Panel — Qlik Sense Extension
 
-Turn any Qlik Sense sheet into a natural-language analyst. **Answers Insights** drops a
+Turn any Qlik Sense sheet into a natural-language analyst. **AI Insight Panel** drops a
 configurable AI narrative panel onto the canvas that reads the app's current selections,
 dimensions, and measures, then writes a plain-language summary — powered by **Qlik Answers**,
 with **no API key or backend to manage**.
@@ -21,7 +21,7 @@ surface — separate from the dashboard, disconnected from the user's live selec
 
 ## What this does
 
-Answers Insights closes that gap by embedding the narrative **directly in the sheet**:
+AI Insight Panel closes that gap by embedding the narrative **directly in the sheet**:
 
 - **Selection-aware** — it reads the app's active filters and feeds them to Qlik Answers, so the
   summary always describes the data the user is currently looking at.
@@ -64,7 +64,7 @@ Answers Insights closes that gap by embedding the narrative **directly in the sh
 
 1. Download `answers-insights.zip` from the [latest release](../../releases/latest).
 2. Qlik Cloud → **Management Console → Extensions → Add**, and upload the zip.
-3. Open any app → **Edit sheet** → drag **Answers Insights** onto the canvas.
+3. Open any app → **Edit sheet** → drag **AI Insight Panel** onto the canvas.
 4. Configure the prompt and questions in the properties panel, then click **Refresh**.
 
 Requires Qlik Answers to be enabled on the tenant, and the viewer to have access to it.

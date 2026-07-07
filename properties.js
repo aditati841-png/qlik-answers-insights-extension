@@ -75,7 +75,7 @@ define([], function () {
         ref: 'props.displayTitle',
         label: 'Header title (leave blank to hide)',
         type: 'string',
-        defaultValue: 'AI Insight',
+        defaultValue: 'AI Insight Panel',
         expression: 'none'
       },
 

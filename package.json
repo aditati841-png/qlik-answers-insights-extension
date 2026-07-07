@@ -1,7 +1,7 @@
 {
   "name": "qlik-answers-insights-extension",
   "version": "2.2.0",
-  "description": "Qlik Sense extension that generates natural-language insight text on the sheet using the Qlik Cloud Assistants API. No API key required.",
+  "description": "AI Insight Panel — a Qlik Sense extension that generates natural-language insight text on the sheet using the Qlik Cloud Assistants API. No API key required.",
   "main": "answers-insights.js",
   "scripts": {
     "build-guide": "node gen-guide.js",
